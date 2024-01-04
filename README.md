@@ -1,5 +1,5 @@
 # water
-Alternative for ReadableStream, WritableStream and TransformStream.
+Alternative to ReadableStream, WritableStream and TransformStream.
 
 This library introduces 3 classes: `RdStream`, `WrStream` and `TrStream`, that can be used in place of
 [ReadableStream](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream)`<Uint8Array>`,
@@ -104,9 +104,9 @@ Differences in API:
 # Exported classes and types
 
 ```ts
-import {RdStream, Source} from './mod.ts';
-import {WrStream, Sink} from './mod.ts';
-import {TrStream, Transformer} from './mod.ts';
+import {RdStream, Source} from 'https://deno.land/x/water@v1.0.0/mod.ts';
+import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.0/mod.ts';
+import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.0/mod.ts';
 ```
 
 - [RdStream](#class-rdstream)
@@ -165,7 +165,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from './mod.ts';
+import {RdStream} from 'https://deno.land/x/water@v1.0.0/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -289,8 +289,8 @@ Other operations that read the stream (like `rdStream.pipeTo()`) also lock it (i
 - **getReader**
 
 ```ts
-function RdStream.getReader(options?: {mode?: undefined}): ReadableStreamDefaultReader<Uint8Array>;
-function RdStream.getReader(options: {mode: 'byob'}): ReadableStreamBYOBReader;
+function RdStream.getReader(options?: {mode?: undefined}): ReadableStreamDefaultReader<Uint8Array> & Reader;
+function RdStream.getReader(options: {mode: 'byob'}): ReadableStreamBYOBReader & Reader;
 ```
 Returns object that allows to read data from the stream.
 The stream becomes locked till this reader is released by calling `reader.releaseLock()` or `reader[Symbol.dispose]()`.
@@ -300,8 +300,8 @@ If the stream is already locked, this method throws error.
 - **getReaderWhenReady**
 
 ```ts
-function RdStream.getReaderWhenReady(options?: {mode?: undefined}): Promise<ReadableStreamDefaultReader<Uint8Array>>;
-function RdStream.getReaderWhenReady(options: {mode: 'byob'}): Promise<ReadableStreamBYOBReader>;
+function RdStream.getReaderWhenReady(options?: {mode?: undefined}): Promise<ReadableStreamDefaultReader<Uint8Array> & Reader>;
+function RdStream.getReaderWhenReady(options: {mode: 'byob'}): Promise<ReadableStreamBYOBReader & Reader>;
 ```
 Like `rdStream.getReader()`, but waits for the stream to become unlocked before returning the reader (and so locking it again).
 
@@ -465,7 +465,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 ### Example
 
 ```ts
-import {WrStream} from './mod.ts';
+import {WrStream} from 'https://deno.land/x/water@v1.0.0/mod.ts';
 
 /**	Writable stream that accumulates data to string result.
  **/
@@ -565,7 +565,7 @@ Other operations that write to the stream (like `wrStream.writeAll()`) also lock
 - **getWriter**
 
 ```ts
-function WrStream.getWriter(): WritableStreamDefaultWriter<Uint8Array>;
+function WrStream.getWriter(): WritableStreamDefaultWriter<Uint8Array> & Writer;
 ```
 Returns object that allows to write data to the stream.
 The stream becomes locked till this writer is released by calling `writer.releaseLock()` or `writer[Symbol.dispose]()`.
@@ -575,7 +575,7 @@ If the stream is already locked, this method throws error.
 - **getWriterWhenReady**
 
 ```ts
-function WrStream.getWriterWhenReady(): Promise<WritableStreamDefaultWriter<Uint8Array>>;
+function WrStream.getWriterWhenReady(): Promise<WritableStreamDefaultWriter<Uint8Array> & Writer>;
 ```
 
 Like `wrStream.getWriter()`, but waits for the stream to become unlocked before returning the writer (and so locking it again).
@@ -626,7 +626,7 @@ The following example demonstrates `TrStream` that encloses the input in `"`-quo
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from './mod.ts';
+import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.0/mod.ts';
 
 // StringStreamer:
 
@@ -727,7 +727,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from './mod.ts';
+import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.0/mod.ts';
 
 // StringStreamer:
 
