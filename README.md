@@ -104,9 +104,9 @@ Differences in API:
 # Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'https://deno.land/x/water@v1.0.0/mod.ts';
-import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.0/mod.ts';
-import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.0/mod.ts';
+import {RdStream, Source} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 ```
 
 - [RdStream](#class-rdstream)
@@ -165,7 +165,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'https://deno.land/x/water@v1.0.0/mod.ts';
+import {RdStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -465,7 +465,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 ### Example
 
 ```ts
-import {WrStream} from 'https://deno.land/x/water@v1.0.0/mod.ts';
+import {WrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 
 /**	Writable stream that accumulates data to string result.
  **/
@@ -558,7 +558,7 @@ readonly WrStream.locked: boolean;
 When somebody wants to start writing to this stream, he calls `wrStream.getWriter()`, and after that call the stream becomes locked.
 Future calls to `wrStream.getWriter()` will throw error till the writer is released (`writer.releaseLock()`).
 
-Other operations that write to the stream (like `wrStream.writeAll()`) also lock it (internally they get writer, and release it later).
+Other operations that write to the stream (like `wrStream.writeWhenReady()`) also lock it (internally they get writer, and release it later).
 
 ### Methods:
 
@@ -626,7 +626,7 @@ The following example demonstrates `TrStream` that encloses the input in `"`-quo
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.0/mod.ts';
+import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 
 // StringStreamer:
 
@@ -636,12 +636,12 @@ const textEncoder = new TextEncoder;
  **/
 class StringStreamer extends RdStream
 {	constructor(str='')
-	{	let hello = textEncoder.encode(str);
+	{	let data = textEncoder.encode(str);
 		super
 		(	{	read(view)
-				{	const n = Math.min(view.byteLength, hello.byteLength);
-					view.set(hello.subarray(0, n));
-					hello = hello.subarray(n);
+				{	const n = Math.min(view.byteLength, data.byteLength);
+					view.set(data.subarray(0, n));
+					data = data.subarray(n);
 					return n;
 				}
 			}
@@ -658,6 +658,8 @@ const C_LF = '\n'.charCodeAt(0);
 const C_R = 'r'.charCodeAt(0);
 const C_N = 'n'.charCodeAt(0);
 
+const QUOT_ARR = new Uint8Array([C_QUOT]);
+
 /**	Transforms stream by enclosing it in `"`-quotes, and inserting `\` chars before each `"` or `\` in the input,
 	and converts ASCII CR and LF to `\r` and `\n` respectively.
  **/
@@ -665,7 +667,7 @@ class Escaper extends TrStream
 {	constructor()
 	{	super
 		(	{	async start(writer)
-				{	await writer.write(new Uint8Array([C_QUOT]));
+				{	await writer.write(QUOT_ARR);
 				},
 
 				async transform(writer, chunk)
@@ -711,7 +713,7 @@ class Escaper extends TrStream
 				},
 
 				async flush(writer)
-				{	await writer.write(new Uint8Array([C_QUOT]));
+				{	await writer.write(QUOT_ARR);
 				},
 			}
 		);
@@ -727,7 +729,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.0/mod.ts';
+import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 
 // StringStreamer:
 
@@ -737,12 +739,12 @@ const textEncoder = new TextEncoder;
  **/
 class StringStreamer extends RdStream
 {	constructor(str='')
-	{	let hello = textEncoder.encode(str);
+	{	let data = textEncoder.encode(str);
 		super
 		(	{	read(view)
-				{	const n = Math.min(view.byteLength, hello.byteLength);
-					view.set(hello.subarray(0, n));
-					hello = hello.subarray(n);
+				{	const n = Math.min(view.byteLength, data.byteLength);
+					view.set(data.subarray(0, n));
+					data = data.subarray(n);
 					return n;
 				}
 			}

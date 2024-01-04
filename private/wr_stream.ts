@@ -82,7 +82,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 	/**	When somebody wants to start writing to this stream, he calls `wrStream.getWriter()`, and after that call the stream becomes locked.
 		Future calls to `wrStream.getWriter()` will throw error till the writer is released (`writer.releaseLock()`).
 
-		Other operations that write to the stream (like `wrStream.writeAll()`) also lock it (internally they get writer, and release it later).
+		Other operations that write to the stream (like `wrStream.writeWhenReady()`) also lock it (internally they get writer, and release it later).
 	 **/
 	get locked()
 	{	return this.#locked;
