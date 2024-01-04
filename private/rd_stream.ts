@@ -459,18 +459,19 @@ class ReadCallbackAccessor extends CallbackAccessor
 		return this.useCallbacks
 		(	async callbacks =>
 			{	let isUserSuppliedBuffer = true;
+				const {curPiper} = this;
+				if (curPiper)
+				{	const data = curPiper.read(view);
+					if (data)
+					{	return data;
+					}
+					this.#autoAllocateBuffer = curPiper.buffer; // good to have some buffer
+					this.curPiper = undefined;
+				}
 				if (!view)
 				{	view = this.#autoAllocateBuffer ?? new Uint8Array(this.autoAllocateChunkSize);
 					this.#autoAllocateBuffer = undefined;
 					isUserSuppliedBuffer = false;
-				}
-				const {curPiper} = this;
-				if (curPiper)
-				{	const nRead = curPiper.read(view);
-					if (nRead)
-					{	return nRead;
-					}
-					this.curPiper = undefined;
 				}
 				const nRead = await callbacks.read!(view);
 				if (!isUserSuppliedBuffer)
@@ -487,6 +488,15 @@ class ReadCallbackAccessor extends CallbackAccessor
 				}
 			}
 		);
+	}
+
+	getPiper()
+	{	let {curPiper} = this;
+		if (!curPiper)
+		{	curPiper = new Piper(this.autoAllocateChunkSize, this.autoAllocateMin);
+			this.curPiper = curPiper;
+		}
+		return curPiper;
 	}
 }
 
@@ -508,6 +518,10 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 
 	cancel(reason?: Any)
 	{	return this.getCallbackAccessor().close(true, reason);
+	}
+
+	unread(chunk: Uint8Array)
+	{	this.getCallbackAccessor().getPiper().unread(chunk);
 	}
 
 	/**	Allows you to iterate this stream yielding `Uint8Array` data chunks.
@@ -563,8 +577,6 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	{	try
 		{	const callbackAccessor = this.getCallbackAccessor();
 			const writer = dest.getWriter();
-			const curPiper = callbackAccessor.curPiper ?? new Piper(callbackAccessor.autoAllocateChunkSize, callbackAccessor.autoAllocateMin);
-			callbackAccessor.curPiper = curPiper;
 			try
 			{	const signal = options?.signal;
 				if (signal)
@@ -573,6 +585,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 					}
 					signal.addEventListener('abort', () => {writer.abort(signal.reason)});
 				}
+				const curPiper = callbackAccessor.getPiper();
 				const isEof = await callbackAccessor.useCallbacks
 				(	callbacksForRead =>
 					{	if (writer instanceof Writer)
@@ -616,13 +629,13 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			{	if (callbackAccessor.error !== undefined)
 				{	// Read error
 					if (!options?.preventAbort)
-					{	writer.abort(e);
+					{	await writer.abort(e);
 					}
 				}
 				else
 				{	// Write error
 					if (!options?.preventCancel)
-					{	this.cancel(e);
+					{	await this.cancel(e);
 					}
 				}
 			}
@@ -666,7 +679,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 					let totalLen = 0;
 					const {curPiper} = callbackAccessor;
 					if (curPiper)
-					{	const chunk = curPiper.uint8Array();
+					{	const chunk = curPiper.read();
 						if (chunk)
 						{	chunks[0] = chunk;
 							totalLen = chunk.byteLength;

@@ -58,7 +58,7 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 		const {start, transform, flush} = transformer;
 		let currentChunk = EMPTY_CHUNK;
 		let currentChunkResolve: ((n: number) => void) | undefined;
-		let currentViewResolve: ((n: number|null) => void) | undefined;
+		let currentViewResolve: ((n: number) => void) | undefined;
 		let currentViewReject: ((reason: Any) => void) | undefined;
 		let isEof = false;
 		let isError = false;
@@ -85,18 +85,20 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 						}
 					},
 
-					close: () =>
+					close: async () =>
 					{	// `transform()` called `writer.close()`
+						bufferLen = 0; // discard buffer
+						await this.writable[_closeEvenIfLocked]();
 						isEof = true;
 						currentChunk = EMPTY_CHUNK;
-						currentViewResolve?.(null);
+						currentViewResolve?.(0);
 						currentViewResolve = undefined;
 						currentViewReject = undefined;
-						this.writable[_closeEvenIfLocked]();
 					},
 
-					abort: reason =>
+					abort: async reason =>
 					{	// `transform()` called `writer.abort()`
+						await this.writable.abort(reason);
 						isError = true;
 						error = reason;
 						isEof = true;
@@ -104,7 +106,6 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 						currentViewReject?.(error);
 						currentViewResolve = undefined;
 						currentViewReject = undefined;
-						this.writable.abort(reason);
 					},
 				},
 				true
@@ -215,7 +216,7 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 					{	if (isError)
 						{	throw error ?? new Error('Stream aborted');
 						}
-						return null;
+						return 0;
 					}
 					else if (currentChunkResolve)
 					{	const n = Math.min(currentChunk.byteLength, view.byteLength);

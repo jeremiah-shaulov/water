@@ -2,13 +2,12 @@ import {Callbacks} from './common.ts';
 import {_useLowLevelCallbacks} from './wr_stream.ts';
 
 export class Piper
-{	private buffer: Uint8Array;
+{	buffer: Uint8Array;
 	private readTo = 0; // position in buffer from where it's good to read more bytes, because there's `autoAllocateMin` space
 	private readPos = 0; // read to `buffer[readPos ..]`
 	private writePos = 0; // write from `buffer[writePos .. readPos]`
 	private readPos2 = 0; // when `readPos > readTo` read to `buffer[readPos2 .. writePos]` over already read and written part of the buffer on the left of `writePos`
 	private usingReadPos2 = false; // where do i read to? to `readPos` or `readPos2`
-	private lastWriteCanReturnZero = true; // last write call was with `canReturnZero` flag
 	private readPromise: number | null | PromiseLike<number|null> | undefined; // pending read operation that reads to the buffer
 	private isEof = false; // i'll not read (i.e. create `readPromise`) if EOF reached
 
@@ -22,9 +21,10 @@ export class Piper
 		callbacksForRead: Callbacks,
 		callbackWriteInverting: (chunk: Uint8Array, canReturnZero: boolean) => number | PromiseLike<number>,
 	)
-	{	let {buffer, readTo, readPos, writePos, readPos2, usingReadPos2, lastWriteCanReturnZero, readPromise, isEof} = this;
+	{	let {buffer, readTo, readPos, writePos, readPos2, usingReadPos2, readPromise, isEof} = this;
 		let bufferSize = buffer.byteLength;
 		let halfBufferSize = bufferSize<2 ? bufferSize : bufferSize >> 1;
+		let lastWriteCanReturnZero = true; // last write call was with `canReturnZero` flag
 		let writePromise: number | PromiseLike<number> | undefined; // pending write operation that writes from the buffer
 		let writerClosed = false;
 		writerClosedPromise.then(() => {writerClosed = true});
@@ -247,35 +247,62 @@ export class Piper
 			this.writePos = writePos;
 			this.readPos2 = readPos2;
 			this.usingReadPos2 = usingReadPos2;
-			this.lastWriteCanReturnZero = lastWriteCanReturnZero;
 			this.readPromise = readPromise;
 			this.isEof = isEof;
 		}
 	}
 
-	read(view: Uint8Array)
+	read(view?: Uint8Array)
 	{	const {buffer, readPos, writePos, readPos2} = this;
 		if (writePos < readPos)
-		{	const n = Math.min(view.byteLength, readPos-writePos);
-			const nextWritePos = writePos + n;
-			view.set(buffer.subarray(writePos, nextWritePos));
-			if (nextWritePos == readPos)
-			{	this.readPos = readPos2;
-				this.readPos2 = 0;
-				this.writePos = 0;
+		{	if (!view)
+			{	return buffer.subarray(writePos, readPos);
 			}
 			else
-			{	this.writePos = nextWritePos;
+			{	const nRead = Math.min(view.byteLength, readPos-writePos);
+				const nextWritePos = writePos + nRead;
+				view.set(buffer.subarray(writePos, nextWritePos));
+				if (nextWritePos == readPos)
+				{	this.readPos = readPos2;
+					this.readPos2 = 0;
+					this.writePos = 0;
+				}
+				else
+				{	this.writePos = nextWritePos;
+				}
+				return view.subarray(0, nRead);
 			}
-			return n;
 		}
-		return 0;
 	}
 
-	uint8Array()
-	{	const {buffer, readPos, writePos} = this;
-		if (writePos < readPos)
-		{	return buffer.subarray(writePos, readPos);
+	unread(chunk: Uint8Array)
+	{	const {buffer, readPos, writePos, readPos2} = this;
+		const bufferSize = buffer.byteLength;
+		const chunkSize = chunk.byteLength;
+		const occupied = readPos2 + (readPos - writePos);
+		if (bufferSize-occupied < chunkSize)
+		{	// Grow buffer, and copy to it current data + `chunk`
+			const buffer2 = new Uint8Array(occupied + chunkSize);
+			buffer2.set(buffer.subarray(writePos, readPos));
+			buffer2.set(buffer.subarray(0, readPos2), readPos-writePos);
+			buffer2.set(chunk, occupied);
+			this.buffer = buffer2;
+			this.readPos2 = 0;
+			this.writePos = 0;
+			this.readPos = buffer2.byteLength;
+		}
+		else if (chunkSize <= bufferSize-readPos)
+		{	// Put chunk at `readPos`
+			buffer.set(chunk, readPos);
+			this.readPos += chunkSize;
+		}
+		else
+		{	// Put a half of the `chunk` at `readPos`, and the second half at `readPos2`
+			const len = bufferSize - readPos;
+			buffer.set(chunk.subarray(0, len), readPos);
+			buffer.set(chunk.subarray(len), readPos2);
+			this.readPos = bufferSize;
+			this.readPos2 += chunkSize - len;
 		}
 	}
 }

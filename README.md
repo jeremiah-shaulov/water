@@ -94,12 +94,15 @@ const wrStream = new WrStream
 - BYOB-agnostic. Data consumer can use BYOB or regular reading mode, and there's no need of handling these situations differently.
 - No transferring buffers that you pass to `reader.read(buffer)`, so the buffers remain usable after the call.
 
-Differences in API:
+Additional features:
 
 - `reader.cancel()` and `writer.abort()` work also on locked streams.
 - `getReader()` and `getWriter()` have `getReaderWhenReady()` and `getWriterWhenReady()` counterparts, that wait for reader/writer to be unlocked.
 - `values()`, `tee()`, `pipeTo()` and `pipeThrough()` are present in both `RdStream` and `Reader`.
+- Also `RdStream` and `Reader` have additional methods: `uint8Array()` and `text()`.
+- `Reader` has `unread()`.
 - `pipeTo()` and `pipeThrough()` are restartable (`transform()` can close it's writer, and then the rest of the input stream can be piped to elsewhere).
+- `Reader` and `Writer` implement `Symbol.dispose` that releases the lock.
 
 # Exported classes and types
 
@@ -236,12 +239,12 @@ type Source =
 	/**	Is called as response to `rdStream.cancel()` or `reader.cancel()`.
 		After that, no more callbacks are called (except `catch()`).
 	 **/
-	cancel?(reason: Any): void | PromiseLike<void>;
+	cancel?(reason: any): void | PromiseLike<void>;
 
 	/**	Is called when `start()`, `read()`, `close()` or `cancel()` thrown exception or returned a rejected promise.
 		After that, no more callbacks are called.
 	 **/
-	catch?(reason: Any): void | PromiseLike<void>;
+	catch?(reason: any): void | PromiseLike<void>;
 };
 ```
 
@@ -540,12 +543,12 @@ type Sink =
 	/**	This method is called as response to `wrStream.abort(reason)` or `writer.abort(reason)`.
 		After that, no more callbacks are called.
 	 **/
-	abort?(reason: Any): void | PromiseLike<void>;
+	abort?(reason: any): void | PromiseLike<void>;
 
 	/**	This method is called when {@link Sink.write} thrown exception or returned a rejected promise.
 		After that, no more callbacks are called.
 	 **/
-	catch?(reason: Any): void | PromiseLike<void>;
+	catch?(reason: any): void | PromiseLike<void>;
 };
 ```
 
@@ -588,7 +591,7 @@ Like `wrStream.getWriter()`, but waits for the stream to become unlocked before 
 - **abort**
 
 ```ts
-function WrStream.abort(reason?: Any): Promise<void>;
+function WrStream.abort(reason?: any): Promise<void>;
 ```
 
 Interrupt current writing operation (reject the promise that `writer.write()` returned, if any),
