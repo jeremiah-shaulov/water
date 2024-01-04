@@ -104,9 +104,9 @@ Differences in API:
 # Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'https://deno.land/x/water@v1.0.3/mod.ts';
-import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.3/mod.ts';
-import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {RdStream, Source} from 'https://deno.land/x/water@v1.0.2/mod.ts';
+import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.2/mod.ts';
+import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.2/mod.ts';
 ```
 
 - [RdStream](#class-rdstream)
@@ -165,7 +165,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {RdStream} from 'https://deno.land/x/water@v1.0.2/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -465,7 +465,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 ### Example
 
 ```ts
-import {WrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {WrStream} from 'https://deno.land/x/water@v1.0.2/mod.ts';
 
 /**	Writable stream that accumulates data to string result.
  **/
@@ -626,7 +626,7 @@ The following example demonstrates `TrStream` that encloses the input in `"`-quo
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.2/mod.ts';
 
 // StringStreamer:
 
@@ -729,7 +729,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.2/mod.ts';
 
 // StringStreamer:
 
