@@ -104,9 +104,10 @@ Differences in API:
 # Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'https://deno.land/x/water@v1.0.2/mod.ts';
-import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.2/mod.ts';
-import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.2/mod.ts';
+import {RdStream, Source} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.3/mod.ts';
+import {TooBigError} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 ```
 
 - [RdStream](#class-rdstream)
@@ -165,7 +166,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'https://deno.land/x/water@v1.0.2/mod.ts';
+import {RdStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -417,18 +418,22 @@ If the stream is locked, this method throws error. However you can do `getReader
 - **uint8Array**
 
 ```ts
-function RdStream.uint8Array(): Promise<Uint8Array>;
+function RdStream.uint8Array(options?: {lengthLimit?: number}): Promise<Uint8Array>;
 ```
 Reads the whole stream to memory.
+
+If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number, a `TooBigError` exception is thrown.
 
 If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 
 - **text**
 
 ```ts
-function RdStream.text(label?: string, options?: TextDecoderOptions): Promise<string>;
+function RdStream.text(label?: string, options?: TextDecoderOptions & {lengthLimit?: number}): Promise<string>;
 ```
 Reads the whole stream to memory, and converts it to string, just as `TextDecoder.decode()` does.
+
+If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number, a `TooBigError` exception is thrown.
 
 If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 
@@ -460,12 +465,12 @@ console.log(await rdStream2.text());
 
 ## class WrStream
 
-This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web/API/WritableStream`<Uint8Array>`.
+This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web/API/WritableStream)`<Uint8Array>`.
 
 ### Example
 
 ```ts
-import {WrStream} from 'https://deno.land/x/water@v1.0.2/mod.ts';
+import {WrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 
 /**	Writable stream that accumulates data to string result.
  **/
@@ -626,7 +631,7 @@ The following example demonstrates `TrStream` that encloses the input in `"`-quo
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.2/mod.ts';
+import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 
 // StringStreamer:
 
@@ -729,7 +734,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.2/mod.ts';
+import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.3/mod.ts';
 
 // StringStreamer:
 
