@@ -25,6 +25,8 @@ export type Sink =
 		- `close()` if caller called `writer.close()` to terminate the stream.
 		- `abort()` if caller called `wrStream.abort(reason)` or `writer.abort(reason)`.
 		- `catch()` if `write()` thrown exception or returned a rejected promise.
+
+		And the very last step is to call `finally()`, and if it thrown also to call `catch()` (again?).
 	 **/
 	start?(): void | PromiseLike<void>;
 
@@ -49,8 +51,13 @@ export type Sink =
 
 	/**	This method is called when {@link Sink.write} thrown exception or returned a rejected promise.
 		After that, no more callbacks are called.
+		Exceptions in `catch()` are silently ignored.
 	 **/
 	catch?(reason: Any): void | PromiseLike<void>;
+
+	/**	Is called when the stream is finished in either way.
+	 **/
+	finally?(): void | PromiseLike<void>;
 };
 
 export class WrStreamInternal extends WritableStream<Uint8Array>

@@ -32,6 +32,8 @@ export type Source =
 		- `close()` is called if `read()` returned EOF (`0` or `null`).
 		- `cancel()` if caller called `rdStream.cancel(reason)` or `reader.cancel(reason)`.
 		- `catch()` if `read()` thrown exception or returned a rejected promise.
+
+		And the very last step is to call `finally()`, and if it thrown also to call `catch()` (again?).
 	 **/
 	start?(): void | PromiseLike<void>;
 
@@ -56,8 +58,13 @@ export type Source =
 
 	/**	Is called when `start()`, `read()`, `close()` or `cancel()` thrown exception or returned a rejected promise.
 		After that, no more callbacks are called.
+		Exceptions in `catch()` are silently ignored.
 	 **/
 	catch?(reason: Any): void | PromiseLike<void>;
+
+	/**	Is called when the stream is finished in either way.
+	 **/
+	finally?(): void | PromiseLike<void>;
 };
 
 /**	This class extends `ReadableStream<Uint8Array>`, and can be used as it's substitutor.

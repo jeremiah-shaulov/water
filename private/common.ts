@@ -13,6 +13,7 @@ export type Callbacks =
 	cancel?(reason: Any): void | PromiseLike<void>;
 	abort?(reason: Any): void | PromiseLike<void>;
 	catch?(reason: Any): void | PromiseLike<void>;
+	finally?(): void | PromiseLike<void>;
 };
 
 export class CallbackAccessor
@@ -140,16 +141,31 @@ export class CallbackAccessor
 			}
 		}
 
-		if (this.error != undefined)
-		{	if (callbacks?.catch)
+		if (this.error!=undefined && callbacks?.catch)
+		{	try
+			{	await callbacks.catch(this.error);
+			}
+			catch
+			{	// ok
+			}
+		}
+
+		if (callbacks?.finally)
+		{	try
+			{	await callbacks.finally();
+			}
+			catch (e)
 			{	try
-				{	await callbacks.catch(this.error);
+				{	await callbacks.catch?.(e);
 				}
 				catch
 				{	// ok
 				}
 			}
-			reportClosedWithError?.(this.error);
+		}
+
+		if (this.error != undefined)
+		{	reportClosedWithError?.(this.error);
 			throw this.error;
 		}
 	}
