@@ -276,33 +276,47 @@ export class Piper
 	}
 
 	unread(chunk: Uint8Array)
-	{	const {buffer, readPos, writePos, readPos2} = this;
+	{	// Assume: 0 <= readPos2 <= writePos <= readPos <= bufferSize
+		// Can read to `buffer[readPos .. bufferSize]`, and then to `buffer[readPos2 .. writePos]`
+		// Can write from `buffer[writePos .. readPos]`, and then `buffer[0 .. readPos2]` will become `buffer[writePos .. readPos]` (will set readPos to readPos2, writePos to 0, and readPos2 to 0)
+		const {buffer, readPos, writePos, readPos2} = this;
 		const bufferSize = buffer.byteLength;
 		const chunkSize = chunk.byteLength;
-		const occupied = readPos2 + (readPos - writePos);
+		const occupiedAtRight = readPos - writePos;
+		const occupied = readPos2 + occupiedAtRight;
 		if (bufferSize-occupied < chunkSize)
-		{	// Grow buffer, and copy to it current data + `chunk`
-			const buffer2 = new Uint8Array(occupied + chunkSize);
-			buffer2.set(buffer.subarray(writePos, readPos));
-			buffer2.set(buffer.subarray(0, readPos2), readPos-writePos);
-			buffer2.set(chunk, occupied);
+		{	// Grow buffer, and copy to it the `chunk` + current data
+			const buffer2 = new Uint8Array(chunkSize + occupied);
+			buffer2.set(chunk);
+			buffer2.set(buffer.subarray(writePos, readPos), chunkSize);
+			buffer2.set(buffer.subarray(0, readPos2), chunkSize + occupiedAtRight);
 			this.buffer = buffer2;
 			this.readPos2 = 0;
 			this.writePos = 0;
 			this.readPos = buffer2.byteLength;
 		}
-		else if (chunkSize <= bufferSize-readPos)
-		{	// Put chunk at `readPos`
-			buffer.set(chunk, readPos);
-			this.readPos += chunkSize;
-		}
 		else
-		{	// Put a half of the `chunk` at `readPos`, and the second half at `readPos2`
-			const len = bufferSize - readPos;
-			buffer.set(chunk.subarray(0, len), readPos);
-			buffer.set(chunk.subarray(len), readPos2);
-			this.readPos = bufferSize;
-			this.readPos2 += chunkSize - len;
+		{	// Relocate current data in the buffer
+			if (writePos < chunkSize)
+			{	let newWritePos = bufferSize - occupiedAtRight;
+				buffer.copyWithin(newWritePos, writePos, readPos);
+				newWritePos -= chunkSize;
+				buffer.set(chunk, newWritePos);
+				this.writePos = newWritePos;
+				this.readPos = bufferSize;
+			}
+			else
+			{	if (writePos-readPos2 < chunkSize)
+				{	const toRight = Math.min(bufferSize-readPos, readPos2);
+					buffer.copyWithin(readPos, 0, toRight);
+					buffer.copyWithin(0, toRight, readPos2);
+					this.readPos = readPos + toRight;
+					this.readPos2 = readPos2 - toRight;
+				}
+				const newWritePos = writePos - chunkSize;
+				buffer.set(chunk, newWritePos);
+				this.writePos = newWritePos;
+			}
 		}
 	}
 }

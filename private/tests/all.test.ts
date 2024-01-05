@@ -1469,16 +1469,33 @@ Deno.test
 );
 
 Deno.test
-(	'pipeThrough: restart',
+(	'pipeThrough: restart + unread',
 	async () =>
-	{	const sink = new StringSink;
-		const tokens = new StringStreamer('One Two Three Four');
-		await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
-		assertEquals(sink.value, 'One');
-		await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
-		assertEquals(sink.value, 'OneTwo');
-		const rest = await tokens.text();
-		assertEquals(rest, 'Three Four');
-		await sink.close();
+	{	for (let a=0; a<2; a++)
+		{	const sink = new StringSink;
+			const tokens = new StringStreamer('One Two Three Four');
+			if (a >= 1)
+			{	tokens.unread(new TextEncoder().encode('Zero '));
+			}
+			if (a >= 2)
+			{	tokens.unread(new TextEncoder().encode('-One '));
+
+				await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
+				assertEquals(sink.value, '-One');
+				sink.value = '';
+			}
+			if (a >= 1)
+			{	await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
+				assertEquals(sink.value, 'Zero');
+				sink.value = '';
+			}
+			await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
+			assertEquals(sink.value, 'One');
+			await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
+			assertEquals(sink.value, 'OneTwo');
+			const rest = await tokens.text();
+			assertEquals(rest, 'Three Four');
+			await sink.close();
+		}
 	}
 );

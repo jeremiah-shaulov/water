@@ -334,6 +334,19 @@ export class RdStream extends ReadableStream<Uint8Array>
 	{	return this.#callbackAccessor.close(true, reason);
 	}
 
+	/**	Push chunk to the stream, so next read will get it.
+		Chunk contents are copied to the internal buffer.
+	 **/
+	unread(chunk: Uint8Array)
+	{	const reader = this.getReader();
+		try
+		{	reader.unread(chunk);
+		}
+		finally
+		{	reader.releaseLock();
+		}
+	}
+
 	/**	Allows to iterate this stream yielding `Uint8Array` data chunks.
 
 		Usually you want to use `for await...of` to iterate.
@@ -535,6 +548,9 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	{	return this.getCallbackAccessor().close(true, reason);
 	}
 
+	/**	Push chunk to the stream, so next read will get it.
+		Chunk contents are copied to the internal buffer.
+	 **/
 	unread(chunk: Uint8Array)
 	{	this.getCallbackAccessor().getPiper().unread(chunk);
 	}
@@ -687,6 +703,8 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	/**	Reads the whole stream to memory.
 		If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number,
 		a `TooBigError` exception is thrown.
+
+		Finally the reader will be unlocked.
 	 **/
 	async uint8Array(options?: {lengthLimit?: number})
 	{	try
@@ -763,6 +781,8 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	}
 
 	/**	Reads the whole stream to memory, and converts it to string, just as `TextDecoder.decode()` does.
+
+		Finally the reader will be unlocked.
 	 **/
 	async text(label?: string, options?: TextDecoderOptions & {lengthLimit?: number})
 	{	return new TextDecoder(label, options).decode(await this.uint8Array(options));
