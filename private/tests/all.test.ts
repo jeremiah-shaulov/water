@@ -7,6 +7,10 @@ import {assertEquals} from 'https://deno.land/std@0.210.0/assert/assert_equals.t
 // deno-lint-ignore no-explicit-any
 type Any = any;
 
+const textEncoder = new TextEncoder;
+
+const C_SPACE = ' '.charCodeAt(0);
+
 function readToPull(read: (view: Uint8Array) => number | null | Promise<number|null>, limitItems=Number.MAX_SAFE_INTEGER): UnderlyingByteSource
 {	let i = 0;
 	return {
@@ -98,6 +102,66 @@ function createTcpServer(handler: (conn: Deno.Conn) => Promise<void>, maxConns=1
 		{	listener.close();
 		}
 	};
+}
+
+class StringStreamer extends RdStream
+{	constructor(str='')
+	{	let data = textEncoder.encode(str);
+		super
+		(	{	read(view)
+				{	const n = Math.min(view.byteLength, data.byteLength);
+					view.set(data.subarray(0, n));
+					data = data.subarray(n);
+					return n;
+				}
+			}
+		);
+	}
+}
+
+const EMPTY_CHUNK = new Uint8Array;
+
+class StringSink extends WrStream
+{	value = '';
+
+	constructor()
+	{	const decoder = new TextDecoder;
+		super
+		(	{	write: chunk =>
+				{	this.value += decoder.decode(chunk, {stream: true});
+					return chunk.byteLength;
+				},
+
+				finally()
+				{	decoder.decode(EMPTY_CHUNK); // this is required to free the `decoder` resource
+				}
+			}
+		);
+	}
+
+	toString()
+	{	return this.value;
+	}
+}
+
+class CopyOneToken extends TrStream
+{	constructor()
+	{	super
+		(	{	async transform(writer, chunk)
+				{	const len = chunk.byteLength;
+					for (let i=0; i<len; i++)
+					{	if (chunk[i] == C_SPACE)
+						{	await writer.write(chunk.subarray(0, i));
+							await writer.close();
+							return i + 1;
+						}
+					}
+					await writer.write(chunk);
+					return len;
+				}
+			}
+		);
+	}
 }
 
 Deno.test
@@ -1401,5 +1465,20 @@ Deno.test
 			src = new Uint8Array(src.buffer);
 			assertEquals(src, dest);
 		}
+	}
+);
+
+Deno.test
+(	'pipeThrough: restart',
+	async () =>
+	{	const sink = new StringSink;
+		const tokens = new StringStreamer('One Two Three Four');
+		await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
+		assertEquals(sink.value, 'One');
+		await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
+		assertEquals(sink.value, 'OneTwo');
+		const rest = await tokens.text();
+		assertEquals(rest, 'Three Four');
+		await sink.close();
 	}
 );

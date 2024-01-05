@@ -20,6 +20,7 @@ export class CallbackAccessor
 {	closed: Promise<void>;
 	error: Any;
 	ready: Promise<void>;
+	waitBeforeClose: Promise<unknown>|undefined; // Promise that will be awaited before closing the stream. It must not throw (reject).
 	#callbacks: Callbacks|undefined;
 	#cancelCurOp: ((value?: undefined) => void) | undefined;
 	#reportClosed: VoidFunction|undefined;
@@ -99,15 +100,22 @@ export class CallbackAccessor
 	}
 
 	async close(isCancelOrAbort=false, reason?: Any)
-	{	const callbacks = this.#callbacks;
+	{	const waitBeforeClose = this.waitBeforeClose;
+		const callbacks = this.#callbacks;
 		let cancelCurOp = this.#cancelCurOp;
 		const reportClosed = this.#reportClosed;
 		const reportClosedWithError = this.#reportClosedWithError;
 
+		this.waitBeforeClose = undefined;
 		this.#callbacks = undefined; // don't call callbacks anymore
 		this.#cancelCurOp = undefined;
 		this.#reportClosed = undefined;
 		this.#reportClosedWithError = undefined;
+
+		if (waitBeforeClose)
+		{	await waitBeforeClose; // must not throw (reject)
+		}
+
 
 		if (this.error == undefined)
 		{	if (!isCancelOrAbort)

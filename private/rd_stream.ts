@@ -6,6 +6,8 @@ import {TeeRegular, TeeRequireParallelRead} from './tee.ts';
 // deno-lint-ignore no-explicit-any
 type Any = any;
 
+const _setWaitBeforeClose = Symbol('_setWaitBeforeClose');
+
 export class TooBigError extends Error
 {
 }
@@ -278,6 +280,12 @@ export class RdStream extends ReadableStream<Uint8Array>
 	}
 
 	// methods:
+
+	/**	Set promise that will be awaited before closing the stream. It must not throw (reject).
+	 **/
+	[_setWaitBeforeClose](waitBeforeClose: Promise<unknown>)
+	{	this.#callbackAccessor.waitBeforeClose = waitBeforeClose;
+	}
 
 	/**	Returns object that allows to read data from the stream.
 		The stream becomes locked till this reader is released by calling `reader.releaseLock()` or `reader[Symbol.dispose]()`.
@@ -668,8 +676,12 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		},
 		options?: PipeOptions
 	)
-	{	this.pipeTo(transform.writable, options).then(undefined, () => {});
-		return transform.readable;
+	{	const waitBeforeClose = this.pipeTo(transform.writable, options).then(undefined, () => {});
+		const {readable} = transform;
+		if (readable instanceof RdStream)
+		{	readable[_setWaitBeforeClose](waitBeforeClose);
+		}
+		return readable;
 	}
 
 	/**	Reads the whole stream to memory.
