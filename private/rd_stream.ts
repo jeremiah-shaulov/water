@@ -426,8 +426,14 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	pipeTo(dest: WritableStream<Uint8Array>, options?: PipeOptions)
-	{	return this.getReader().pipeTo(dest, options);
+	async pipeTo(dest: WritableStream<Uint8Array>, options?: PipeOptions)
+	{	const reader = this.getReader();
+		try
+		{	return await reader.pipeTo(dest, options);
+		}
+		finally
+		{	reader.releaseLock();
+		}
 	}
 
 	/**	Uses `rdStream.pipeTo()` to pipe the data to transformer's writable stream, and returns transformer's readable stream.
@@ -443,7 +449,12 @@ export class RdStream extends ReadableStream<Uint8Array>
 		},
 		options?: PipeOptions
 	)
-	{	return this.getReader().pipeThrough(transform, options);
+	{	const waitBeforeClose = this.pipeTo(transform.writable, options).then(undefined, () => {});
+		const {readable} = transform;
+		if (readable instanceof RdStream)
+		{	readable[_setWaitBeforeClose](waitBeforeClose);
+		}
+		return readable;
 	}
 
 	/**	Reads the whole stream to memory.
@@ -452,8 +463,14 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	uint8Array(options?: {lengthLimit?: number})
-	{	return this.getReader().uint8Array(options);
+	async uint8Array(options?: {lengthLimit?: number})
+	{	const reader = this.getReader();
+		try
+		{	return await reader.uint8Array(options);
+		}
+		finally
+		{	reader.releaseLock();
+		}
 	}
 
 	/**	Reads the whole stream to memory, and converts it to string, just as `TextDecoder.decode()` does.
@@ -462,8 +479,8 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	text(label?: string, options?: TextDecoderOptions & {lengthLimit?: number})
-	{	return this.getReader().text(label, options);
+	async text(label?: string, options?: TextDecoderOptions & {lengthLimit?: number})
+	{	return new TextDecoder(label, options).decode(await this.uint8Array(options));
 	}
 }
 
@@ -601,89 +618,80 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 
 		If destination closes or enters error state, then `pipeTo()` throws exception.
 		But then `pipeTo()` can be called again to continue piping the rest of the stream to another destination (including previously buffered data).
-
-		Finally the reader will be unlocked.
 	 **/
 	async pipeTo(dest: WritableStream<Uint8Array>, options?: PipeOptions)
-	{	try
-		{	const callbackAccessor = this.getCallbackAccessor();
-			const writer = dest.getWriter();
-			try
-			{	const signal = options?.signal;
-				if (signal)
-				{	if (signal.aborted)
-					{	throw signal.reason;
-					}
-					signal.addEventListener('abort', () => {writer.abort(signal.reason)});
+	{	const callbackAccessor = this.getCallbackAccessor();
+		const writer = dest.getWriter();
+		try
+		{	const signal = options?.signal;
+			if (signal)
+			{	if (signal.aborted)
+				{	throw signal.reason;
 				}
-				const curPiper = callbackAccessor.getPiper();
-				const isEof = await callbackAccessor.useCallbacks
-				(	callbacksForRead =>
-					{	if (writer instanceof Writer)
-						{	return writer[_useLowLevelCallbacks]
-							(	callbacksForWrite => curPiper.pipeTo
-								(	writer.closed,
-									callbacksForRead,
-									(chunk, canReturnZero) =>
-									{	const resultOrPromise = callbacksForWrite.write!(chunk, canReturnZero);
-										if (typeof(resultOrPromise) != 'object')
-										{	return -resultOrPromise - 1;
-										}
-										return resultOrPromise.then(result => -result - 1);
-									}
-								)
-							);
-						}
-						else
-						{	return curPiper.pipeTo
+				signal.addEventListener('abort', () => {writer.abort(signal.reason)});
+			}
+			const curPiper = callbackAccessor.getPiper();
+			const isEof = await callbackAccessor.useCallbacks
+			(	callbacksForRead =>
+				{	if (writer instanceof Writer)
+					{	return writer[_useLowLevelCallbacks]
+						(	callbacksForWrite => curPiper.pipeTo
 							(	writer.closed,
 								callbacksForRead,
-								async chunk =>
-								{	await writer.write(chunk);
-									return -chunk.byteLength - 1;
+								(chunk, canReturnZero) =>
+								{	const resultOrPromise = callbacksForWrite.write!(chunk, canReturnZero);
+									if (typeof(resultOrPromise) != 'object')
+									{	return -resultOrPromise - 1;
+									}
+									return resultOrPromise.then(result => -result - 1);
 								}
-							);
-						}
-					}
-				);
-				if (isEof !== false)
-				{	callbackAccessor.curPiper = undefined;
-					if (options?.preventClose)
-					{	await callbackAccessor.close();
+							)
+						);
 					}
 					else
-					{	await Promise.all([callbackAccessor.close(), writer.close()]);
+					{	return curPiper.pipeTo
+						(	writer.closed,
+							callbacksForRead,
+							async chunk =>
+							{	await writer.write(chunk);
+								return -chunk.byteLength - 1;
+							}
+						);
 					}
 				}
-			}
-			catch (e)
-			{	if (callbackAccessor.error !== undefined)
-				{	// Read error
-					if (!options?.preventAbort)
-					{	await writer.abort(e);
-					}
+			);
+			if (isEof !== false)
+			{	callbackAccessor.curPiper = undefined;
+				if (options?.preventClose)
+				{	await callbackAccessor.close();
 				}
 				else
-				{	// Write error
-					if (!options?.preventCancel)
-					{	await this.cancel(e);
-					}
+				{	await Promise.all([callbackAccessor.close(), writer.close()]);
 				}
 			}
-			finally
-			{	writer.releaseLock();
+		}
+		catch (e)
+		{	if (callbackAccessor.error !== undefined)
+			{	// Read error
+				if (!options?.preventAbort)
+				{	await writer.abort(e);
+				}
+			}
+			else
+			{	// Write error
+				if (!options?.preventCancel)
+				{	await this.cancel(e);
+				}
 			}
 		}
 		finally
-		{	this.releaseLock();
+		{	writer.releaseLock();
 		}
 	}
 
 	/**	Uses `reader.pipeTo()` to pipe the data to transformer's writable stream, and returns transformer's readable stream.
 
 		The transformer can be an instance of built-in `TransformStream<Uint8Array, unknown>`, `TrStream`, or any other `writable/readable` pair.
-
-		Finally the reader will be unlocked.
 	 **/
 	pipeThrough<T, W extends WritableStream<Uint8Array>, R extends ReadableStream<T>>
 	(	transform:
@@ -703,86 +711,77 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	/**	Reads the whole stream to memory.
 		If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number,
 		a `TooBigError` exception is thrown.
-
-		Finally the reader will be unlocked.
 	 **/
 	async uint8Array(options?: {lengthLimit?: number})
-	{	try
-		{	const lengthLimit = options?.lengthLimit || Number.MAX_SAFE_INTEGER;
-			const callbackAccessor = this.getCallbackAccessor();
-			const result = await callbackAccessor.useCallbacks
-			(	async callbacks =>
-				{	const chunks = new Array<Uint8Array>;
-					let totalLen = 0;
-					const {curPiper} = callbackAccessor;
-					if (curPiper)
-					{	const chunk = curPiper.read();
-						if (chunk)
-						{	chunks[0] = chunk;
-							totalLen = chunk.byteLength;
-							if (totalLen > lengthLimit)
-							{	throw new TooBigError('Data is too big');
-							}
-						}
-						callbackAccessor.curPiper = undefined;
-					}
-					let chunkSize = callbackAccessor.autoAllocateChunkSize || DEFAULT_AUTO_ALLOCATE_SIZE;
-					const autoAllocateMin = callbackAccessor.autoAllocateMin;
-					while (true)
-					{	let chunk = new Uint8Array(chunkSize);
-						while (chunk.byteLength >= autoAllocateMin)
-						{	const nRead = await callbacks.read!(chunk);
-							if (!nRead)
-							{	await callbackAccessor.close();
-								const {byteOffset} = chunk;
-								if (byteOffset > 0)
-								{	chunk = new Uint8Array(chunk.buffer, 0, byteOffset);
-									totalLen += byteOffset;
-									if (totalLen > lengthLimit)
-									{	throw new TooBigError('Data is too big');
-									}
-									if (chunks.length == 0)
-									{	return chunk;
-									}
-									chunks.push(chunk);
-								}
-								if (chunks.length == 0)
-								{	return new Uint8Array;
-								}
-								if (chunks.length == 1)
-								{	return chunks[0];
-								}
-								const result = new Uint8Array(totalLen);
-								let pos = 0;
-								for (const chunk of chunks)
-								{	result.set(chunk, pos);
-									pos += chunk.byteLength;
-								}
-								return result;
-							}
-							chunk = chunk.subarray(nRead);
-						}
-						const {byteOffset} = chunk;
-						chunk = new Uint8Array(chunk.buffer, 0, byteOffset);
-						totalLen += byteOffset;
+	{	const lengthLimit = options?.lengthLimit || Number.MAX_SAFE_INTEGER;
+		const callbackAccessor = this.getCallbackAccessor();
+		const result = await callbackAccessor.useCallbacks
+		(	async callbacks =>
+			{	const chunks = new Array<Uint8Array>;
+				let totalLen = 0;
+				const {curPiper} = callbackAccessor;
+				if (curPiper)
+				{	const chunk = curPiper.read();
+					if (chunk)
+					{	chunks[0] = chunk;
+						totalLen = chunk.byteLength;
 						if (totalLen > lengthLimit)
 						{	throw new TooBigError('Data is too big');
 						}
-						chunks.push(chunk);
-						chunkSize *= 2;
 					}
+					callbackAccessor.curPiper = undefined;
 				}
-			);
-			return result ?? new Uint8Array;
-		}
-		finally
-		{	this.releaseLock();
-		}
+				let chunkSize = callbackAccessor.autoAllocateChunkSize || DEFAULT_AUTO_ALLOCATE_SIZE;
+				const autoAllocateMin = callbackAccessor.autoAllocateMin;
+				while (true)
+				{	let chunk = new Uint8Array(chunkSize);
+					while (chunk.byteLength >= autoAllocateMin)
+					{	const nRead = await callbacks.read!(chunk);
+						if (!nRead)
+						{	await callbackAccessor.close();
+							const {byteOffset} = chunk;
+							if (byteOffset > 0)
+							{	chunk = new Uint8Array(chunk.buffer, 0, byteOffset);
+								totalLen += byteOffset;
+								if (totalLen > lengthLimit)
+								{	throw new TooBigError('Data is too big');
+								}
+								if (chunks.length == 0)
+								{	return chunk;
+								}
+								chunks.push(chunk);
+							}
+							if (chunks.length == 0)
+							{	return new Uint8Array;
+							}
+							if (chunks.length == 1)
+							{	return chunks[0];
+							}
+							const result = new Uint8Array(totalLen);
+							let pos = 0;
+							for (const chunk of chunks)
+							{	result.set(chunk, pos);
+								pos += chunk.byteLength;
+							}
+							return result;
+						}
+						chunk = chunk.subarray(nRead);
+					}
+					const {byteOffset} = chunk;
+					chunk = new Uint8Array(chunk.buffer, 0, byteOffset);
+					totalLen += byteOffset;
+					if (totalLen > lengthLimit)
+					{	throw new TooBigError('Data is too big');
+					}
+					chunks.push(chunk);
+					chunkSize *= 2;
+				}
+			}
+		);
+		return result ?? new Uint8Array;
 	}
 
 	/**	Reads the whole stream to memory, and converts it to string, just as `TextDecoder.decode()` does.
-
-		Finally the reader will be unlocked.
 	 **/
 	async text(label?: string, options?: TextDecoderOptions & {lengthLimit?: number})
 	{	return new TextDecoder(label, options).decode(await this.uint8Array(options));

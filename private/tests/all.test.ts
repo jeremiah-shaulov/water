@@ -1222,7 +1222,8 @@ Deno.test
 		const parts = new Array<Uint8Array>;
 		while (true)
 		{	let i2 = 0;
-			const part = await (await rs.getReaderWhenReady()).pipeThrough
+			using reader = await rs.getReaderWhenReady();
+			const part = await reader.pipeThrough
 			(	new TrStream
 				(	{	async transform(writer, chunk)
 						{	let i = 0;
