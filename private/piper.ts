@@ -2,18 +2,15 @@ import {Callbacks} from './common.ts';
 import {_useLowLevelCallbacks} from './wr_stream.ts';
 
 export class Piper
-{	buffer: Uint8Array;
-	private readTo = 0; // position in buffer from where it's good to read more bytes, because there's `autoAllocateMin` space
-	private readPos = 0; // read to `buffer[readPos ..]`
+{	private readPos = 0; // read to `buffer[readPos ..]`
 	private writePos = 0; // write from `buffer[writePos .. readPos]`
 	private readPos2 = 0; // when `readPos > readTo` read to `buffer[readPos2 .. writePos]` over already read and written part of the buffer on the left of `writePos`
 	private usingReadPos2 = false; // where do i read to? to `readPos` or `readPos2`
 	private readPromise: number | null | PromiseLike<number|null> | undefined; // pending read operation that reads to the buffer
 	private isEof = false; // i'll not read (i.e. create `readPromise`) if EOF reached
 
-	constructor(autoAllocateChunkSize: number, autoAllocateMin: number)
-	{	this.buffer = new Uint8Array(autoAllocateChunkSize);
-		this.readTo = autoAllocateChunkSize - autoAllocateMin;
+	constructor(public buffer: Uint8Array, private autoAllocateMin: number)
+	{
 	}
 
 	async pipeTo
@@ -21,7 +18,7 @@ export class Piper
 		callbacksForRead: Callbacks,
 		callbackWriteInverting: (chunk: Uint8Array, canReturnZero: boolean) => number | PromiseLike<number>,
 	)
-	{	let {buffer, readTo, readPos, writePos, readPos2, usingReadPos2, readPromise, isEof} = this;
+	{	let {buffer, autoAllocateMin, readPos, writePos, readPos2, usingReadPos2, readPromise, isEof} = this;
 		let bufferSize = buffer.byteLength;
 		let halfBufferSize = bufferSize<2 ? bufferSize : bufferSize >> 1;
 		let lastWriteCanReturnZero = true; // last write call was with `canReturnZero` flag
@@ -42,11 +39,8 @@ export class Piper
 				}
 				// Start (or continue) reading and/or writing
 				if (readPromise===undefined && !isEof)
-				{	if (readPos<=readTo || readPos2==0 && writePos>=1 && bufferSize-readPos>=writePos)
-					{	// Read if there's at least `autoAllocateMin` bytes free after the `readPos`, or if `readPos2 == 0` and space at `buffer[.. writePos]` is not larger than the space at `buffer[readPos ..]`
-						// `bufferSize-readPos` is number of free bytes after `readPos` (`buffer[readPos ..]`)
-						// `writePos` is number of free bytes on the left (`buffer[.. writePos]`)
-						// `writePos>=1 && bufferSize-readPos>=writePos` means that `bufferSize-readPos>=1` (i.e. there's space after `readPos`)
+				{	if (bufferSize-readPos >= autoAllocateMin) // If space at right is >= autoAllocateMin
+					{	// Read to right
 						usingReadPos2 = false;
 						readPromise = callbacksForRead.read!
 						(	readPos == 0 ?
@@ -54,8 +48,8 @@ export class Piper
 								buffer.subarray(readPos)
 						);
 					}
-					else if (readPos2 < writePos)
-					{	// Read if there's free space on the left side of the already written position
+					else if (writePos-readPos2 >= autoAllocateMin) // If space at left is >= autoAllocateMin
+					{	// Read to left
 						usingReadPos2 = true;
 						readPromise = callbacksForRead.read!(buffer.subarray(readPos2, writePos));
 					}
@@ -253,9 +247,10 @@ export class Piper
 	}
 
 	read(view?: Uint8Array)
-	{	const {buffer, readPos, writePos, readPos2} = this;
+	{	const {readPos, writePos} = this;
 		if (writePos < readPos)
-		{	if (!view)
+		{	const {buffer} = this;
+			if (!view)
 			{	return buffer.subarray(writePos, readPos);
 			}
 			else
@@ -263,7 +258,7 @@ export class Piper
 				const nextWritePos = writePos + nRead;
 				view.set(buffer.subarray(writePos, nextWritePos));
 				if (nextWritePos == readPos)
-				{	this.readPos = readPos2;
+				{	this.readPos = this.readPos2;
 					this.readPos2 = 0;
 					this.writePos = 0;
 				}

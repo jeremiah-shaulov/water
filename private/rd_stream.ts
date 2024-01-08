@@ -335,7 +335,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 	}
 
 	/**	Push chunk to the stream, so next read will get it.
-		Chunk contents are copied to the internal buffer.
+		This creates internal buffer, and copies the chunk contents to it.
 	 **/
 	unread(chunk: Uint8Array)
 	{	const reader = this.getReader();
@@ -535,10 +535,17 @@ class ReadCallbackAccessor extends CallbackAccessor
 		);
 	}
 
-	getPiper()
+	getOrCreatePiper()
 	{	let {curPiper} = this;
 		if (!curPiper)
-		{	curPiper = new Piper(this.autoAllocateChunkSize, this.autoAllocateMin);
+		{	const autoAllocateBuffer = this.#autoAllocateBuffer;
+			if (autoAllocateBuffer && autoAllocateBuffer.byteLength>=this.autoAllocateChunkSize)
+			{	curPiper = new Piper(autoAllocateBuffer, this.autoAllocateMin);
+				this.#autoAllocateBuffer = undefined;
+			}
+			else
+			{	curPiper = new Piper(new Uint8Array(this.autoAllocateChunkSize), this.autoAllocateMin);
+			}
 			this.curPiper = curPiper;
 		}
 		return curPiper;
@@ -566,10 +573,10 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	}
 
 	/**	Push chunk to the stream, so next read will get it.
-		Chunk contents are copied to the internal buffer.
+		This creates internal buffer, and copies the chunk contents to it.
 	 **/
 	unread(chunk: Uint8Array)
-	{	this.getCallbackAccessor().getPiper().unread(chunk);
+	{	this.getCallbackAccessor().getOrCreatePiper().unread(chunk);
 	}
 
 	/**	Allows you to iterate this stream yielding `Uint8Array` data chunks.
@@ -630,7 +637,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 				}
 				signal.addEventListener('abort', () => {writer.abort(signal.reason)});
 			}
-			const curPiper = callbackAccessor.getPiper();
+			const curPiper = callbackAccessor.getOrCreatePiper();
 			const isEof = await callbackAccessor.useCallbacks
 			(	callbacksForRead =>
 				{	if (writer instanceof Writer)

@@ -334,7 +334,7 @@ In contrast to `ReadableStream.cancel()`, this method works even if the stream i
 function RdStream.unread(chunk: Uint8Array): void;
 ```
 Push chunk to the stream, so next read will get it.
-Chunk contents are copied to the internal buffer.
+This creates internal buffer, and copies the chunk contents to it.
 
 - **[Symbol.asyncIterator], values**
 
