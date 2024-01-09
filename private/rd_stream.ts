@@ -510,8 +510,7 @@ class ReadCallbackAccessor extends CallbackAccessor
 					if (data)
 					{	return data;
 					}
-					this.#autoAllocateBuffer = curPiper.buffer; // good to have some buffer
-					this.curPiper = undefined;
+					this.dropPiper(curPiper);
 				}
 				if (!view)
 				{	view = this.#autoAllocateBuffer ?? new Uint8Array(this.autoAllocateChunkSize);
@@ -549,6 +548,15 @@ class ReadCallbackAccessor extends CallbackAccessor
 			this.curPiper = curPiper;
 		}
 		return curPiper;
+	}
+
+	dropPiper(curPiper: Piper)
+	{	// Assume: `curPiper` == `this.curPiper`
+		const buffer = curPiper.dispose();
+		this.curPiper = undefined;
+		if (buffer && buffer.byteLength>=this.autoAllocateMin && (!this.#autoAllocateBuffer || buffer.byteLength>this.#autoAllocateBuffer.byteLength))
+		{	this.#autoAllocateBuffer = buffer;
+		}
 	}
 }
 
@@ -668,7 +676,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 				}
 			);
 			if (isEof !== false)
-			{	callbackAccessor.curPiper = undefined;
+			{	callbackAccessor.dropPiper(curPiper);
 				if (options?.preventClose)
 				{	await callbackAccessor.close();
 				}
@@ -736,7 +744,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 						{	throw new TooBigError('Data is too big');
 						}
 					}
-					callbackAccessor.curPiper = undefined;
+					callbackAccessor.dropPiper(curPiper);
 				}
 				let chunkSize = callbackAccessor.autoAllocateChunkSize || DEFAULT_AUTO_ALLOCATE_SIZE;
 				const autoAllocateMin = callbackAccessor.autoAllocateMin;

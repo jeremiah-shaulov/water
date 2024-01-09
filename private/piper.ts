@@ -9,7 +9,7 @@ export class Piper
 	private readPromise: number | null | PromiseLike<number|null> | undefined; // pending read operation that reads to the buffer
 	private isEof = false; // i'll not read (i.e. create `readPromise`) if EOF reached
 
-	constructor(public buffer: Uint8Array, private autoAllocateMin: number)
+	constructor(private buffer: Uint8Array, private autoAllocateMin: number)
 	{
 	}
 
@@ -313,5 +313,9 @@ export class Piper
 				this.writePos = newWritePos;
 			}
 		}
+	}
+
+	dispose()
+	{	return this.buffer;
 	}
 }
