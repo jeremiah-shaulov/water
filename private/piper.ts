@@ -251,7 +251,8 @@ export class Piper
 		if (writePos < readPos)
 		{	const {buffer} = this;
 			if (!view)
-			{	return buffer.subarray(writePos, readPos);
+			{	this.writePos = readPos;
+				return buffer.slice(writePos, readPos);
 			}
 			else
 			{	const nRead = Math.min(view.byteLength, readPos-writePos);
