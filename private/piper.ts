@@ -246,28 +246,29 @@ export class Piper
 		}
 	}
 
-	read(view?: Uint8Array)
-	{	const {readPos, writePos} = this;
+	read(view: Uint8Array)
+	{	const {readPos, writePos, readPos2} = this;
 		if (writePos < readPos)
 		{	const {buffer} = this;
-			if (!view)
-			{	this.writePos = readPos;
-				return buffer.slice(writePos, readPos);
-			}
-			else
-			{	const nRead = Math.min(view.byteLength, readPos-writePos);
-				const nextWritePos = writePos + nRead;
-				view.set(buffer.subarray(writePos, nextWritePos));
-				if (nextWritePos == readPos)
-				{	this.readPos = this.readPos2;
-					this.readPos2 = 0;
-					this.writePos = 0;
+			let nRead = Math.min(view.byteLength, readPos-writePos);
+			const nextWritePos = writePos + nRead;
+			view.set(buffer.subarray(writePos, nextWritePos));
+			if (nextWritePos == readPos)
+			{	this.readPos2 = 0;
+				this.writePos = 0;
+				if (nRead+readPos2 <= view.byteLength)
+				{	view.set(buffer.subarray(0, readPos2));
+					nRead += readPos2;
+					this.readPos = 0;
 				}
 				else
-				{	this.writePos = nextWritePos;
+				{	this.readPos = readPos2;
 				}
-				return view.subarray(0, nRead);
 			}
+			else
+			{	this.writePos = nextWritePos;
+			}
+			return view.subarray(0, nRead);
 		}
 	}
 
@@ -322,6 +323,28 @@ export class Piper
 			buffer.set(chunk, newWritePos);
 			this.writePos = newWritePos;
 			this.readPos = bufferSize;
+		}
+	}
+
+	unwrap()
+	{	const {buffer, readPos, writePos, readPos2} = this;
+		if (readPos2 == 0)
+		{	return buffer.subarray(writePos, readPos);
+		}
+		else if (buffer.byteLength-readPos >= readPos2)
+		{	buffer.copyWithin(readPos, 0, readPos2);
+			return buffer.subarray(writePos, readPos+readPos2);
+		}
+		else if (readPos2 + (readPos-writePos) + readPos2 <= buffer.byteLength)
+		{	buffer.copyWithin(readPos2, writePos, readPos);
+			buffer.copyWithin(readPos2 + (readPos-writePos), 0, readPos2);
+			return buffer.subarray(readPos2, readPos2 + (readPos-writePos) + readPos2);
+		}
+		else
+		{	const left = buffer.slice(0, readPos2);
+			buffer.copyWithin(0, writePos, readPos);
+			buffer.set(left, readPos - writePos);
+			return buffer.subarray(0, readPos2 + (readPos-writePos));
 		}
 	}
 

@@ -503,22 +503,35 @@ class ReadCallbackAccessor extends CallbackAccessor
 		}
 		return this.useCallbacks
 		(	async callbacks =>
-			{	let isUserSuppliedBuffer = true;
+			{	const isAllocatedBuffer = !view;
 				const {curPiper} = this;
 				if (curPiper)
-				{	const data = curPiper.read(view);
-					if (data)
-					{	return data;
+				{	if (!view)
+					{	const data = curPiper.unwrap();
+						this.curPiper = undefined;
+						const offset = data.byteOffset + data.byteLength;
+						const haveLength = data.buffer.byteLength - offset;
+						if (haveLength>=this.autoAllocateMin && (!this.#autoAllocateBuffer || this.#autoAllocateBuffer.byteLength<haveLength))
+						{	this.#autoAllocateBuffer = new Uint8Array(data.buffer, offset);
+						}
+						if (data.byteLength)
+						{	return data;
+						}
 					}
-					this.dropPiper(curPiper);
+					else
+					{	const data = curPiper.read(view);
+						if (data)
+						{	return data;
+						}
+						this.dropPiper(curPiper);
+					}
 				}
 				if (!view)
 				{	view = this.#autoAllocateBuffer ?? new Uint8Array(this.autoAllocateChunkSize);
 					this.#autoAllocateBuffer = undefined;
-					isUserSuppliedBuffer = false;
 				}
 				const nRead = await callbacks.read!(view);
-				if (!isUserSuppliedBuffer)
+				if (isAllocatedBuffer)
 				{	const end = view.byteOffset + (nRead ?? 0);
 					if (view.buffer.byteLength-end >= this.autoAllocateMin)
 					{	this.#autoAllocateBuffer = new Uint8Array(view.buffer, end);
@@ -736,15 +749,13 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 				let totalLen = 0;
 				const {curPiper} = callbackAccessor;
 				if (curPiper)
-				{	const chunk = curPiper.read();
-					if (chunk)
-					{	chunks[0] = chunk;
-						totalLen = chunk.byteLength;
-						if (totalLen > lengthLimit)
-						{	throw new TooBigError('Data is too big');
-						}
+				{	const chunk = curPiper.unwrap();
+					callbackAccessor.curPiper = undefined;
+					chunks[0] = chunk;
+					totalLen = chunk.byteLength;
+					if (totalLen > lengthLimit)
+					{	throw new TooBigError('Data is too big');
 					}
-					callbackAccessor.dropPiper(curPiper);
 				}
 				let chunkSize = callbackAccessor.autoAllocateChunkSize || DEFAULT_AUTO_ALLOCATE_SIZE;
 				const autoAllocateMin = callbackAccessor.autoAllocateMin;
