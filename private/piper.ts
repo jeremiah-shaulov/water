@@ -291,28 +291,37 @@ export class Piper
 			this.writePos = 0;
 			this.readPos = buffer2.byteLength;
 		}
+		else if (writePos >= chunkSize)
+		{	// Write the chunk to the space before `writePos`
+			if (writePos-readPos2 < chunkSize)
+			{	// Move from `buffer[0 .. readPos2]` to `buffer[readPos .. bufferSize]` as much as possible.
+				// And if it's not possible to move all, this means that there's only one free range remaining, and it's before `writePos`.
+				// And since we decided not to enlarge the buffer, tis means that there's enough space for the chunk before `writePos`.
+				const toRight = Math.min(bufferSize-readPos, readPos2);
+				buffer.copyWithin(readPos, 0, toRight);
+				buffer.copyWithin(0, toRight, readPos2);
+				this.readPos = readPos + toRight;
+				this.readPos2 = readPos2 - toRight;
+			}
+			const newWritePos = writePos - chunkSize;
+			buffer.set(chunk, newWritePos);
+			this.writePos = newWritePos;
+		}
+		else if (readPos2 == 0)
+		{	// The chunk cannot be written to the space before `writePos`, so move `buffer[writePos .. readPos]` to the right
+			buffer.copyWithin(chunkSize, writePos, readPos);
+			buffer.set(chunk);
+			this.writePos = 0;
+			this.readPos = chunkSize + (readPos - writePos);
+		}
 		else
-		{	// Relocate current data in the buffer
-			if (writePos < chunkSize)
-			{	let newWritePos = bufferSize - occupiedAtRight;
-				buffer.copyWithin(newWritePos, writePos, readPos);
-				newWritePos -= chunkSize;
-				buffer.set(chunk, newWritePos);
-				this.writePos = newWritePos;
-				this.readPos = bufferSize;
-			}
-			else
-			{	if (writePos-readPos2 < chunkSize)
-				{	const toRight = Math.min(bufferSize-readPos, readPos2);
-					buffer.copyWithin(readPos, 0, toRight);
-					buffer.copyWithin(0, toRight, readPos2);
-					this.readPos = readPos + toRight;
-					this.readPos2 = readPos2 - toRight;
-				}
-				const newWritePos = writePos - chunkSize;
-				buffer.set(chunk, newWritePos);
-				this.writePos = newWritePos;
-			}
+		{	// The chunk cannot be written to the space before `writePos`, so move `buffer[writePos .. readPos]` to the right
+			let newWritePos = bufferSize - occupiedAtRight;
+			buffer.copyWithin(newWritePos, writePos, readPos);
+			newWritePos -= chunkSize;
+			buffer.set(chunk, newWritePos);
+			this.writePos = newWritePos;
+			this.readPos = bufferSize;
 		}
 	}
 
