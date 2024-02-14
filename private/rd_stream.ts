@@ -7,6 +7,7 @@ import {TeeRegular, TeeRequireParallelRead} from './tee.ts';
 type Any = any;
 
 const _setWaitBeforeClose = Symbol('_setWaitBeforeClose');
+const _hackishReader = Reflect.ownKeys(new ReadableStream).find(k => k.toString().includes('[[reader]]'));
 
 export class TooBigError extends Error
 {
@@ -272,12 +273,57 @@ export class RdStream extends ReadableStream<Uint8Array>
 	// constructor:
 
 	constructor(source: Source)
-	{	super();
-		const autoAllocateChunkSizeU = source.autoAllocateChunkSize;
+	{	const autoAllocateChunkSizeU = source.autoAllocateChunkSize;
 		const autoAllocateMinU = source.autoAllocateMin;
 		const autoAllocateChunkSize = autoAllocateChunkSizeU && autoAllocateChunkSizeU>0 ? autoAllocateChunkSizeU : DEFAULT_AUTO_ALLOCATE_SIZE;
 		const autoAllocateMin = Math.min(autoAllocateChunkSize, autoAllocateMinU && autoAllocateMinU>0 ? autoAllocateMinU : Math.max(256, autoAllocateChunkSize >> 3));
-		this.#callbackAccessor = new ReadCallbackAccessor(autoAllocateChunkSize, autoAllocateMin, source);
+		const callbackAccessor =  new ReadCallbackAccessor(autoAllocateChunkSize, autoAllocateMin, source);
+		let hackishEnabled = false;
+		let buffer: Uint8Array|undefined;
+		super
+		(	// `deno_web/06_streams.js` uses hackish way to call methods of `ReadableStream` subclasses.
+			// When this class is being used like this, the following callbacks are called:
+			{	pull: async controller =>
+				{	if (hackishEnabled)
+					{	if (!buffer || buffer.byteLength < autoAllocateMin)
+						{	buffer = new Uint8Array(autoAllocateChunkSize);
+						}
+						const view = await callbackAccessor.read(buffer);
+						if (view)
+						{	controller.enqueue(view);
+							buffer = buffer.subarray(view.byteLength);
+						}
+						else
+						{	controller.close();
+						}
+					}
+				},
+
+				cancel: reason =>
+				{	if (hackishEnabled)
+					{	return callbackAccessor.close(true, reason);
+					}
+				}
+			}
+		);
+		this.#callbackAccessor = callbackAccessor;
+		// Once somebody assigns `_hackishReader` property to my object, i understand that the object is being used in a hackish way, so i enable `pull()` callback
+		if (_hackishReader)
+		{	const desc = Object.getOwnPropertyDescriptor(this, _hackishReader);
+			if (desc)
+			{	Object.defineProperty
+				(	this,
+					_hackishReader,
+					{	set: v =>
+						{	hackishEnabled = true;
+							Object.defineProperty(this, _hackishReader, desc); // restore the original descriptor
+							// @ts-expect-error Call super
+							this[_hackishReader] = v;
+						}
+					}
+				);
+			}
+		}
 	}
 
 	// methods:

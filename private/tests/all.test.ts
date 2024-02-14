@@ -12,6 +12,8 @@ const textDecoder = new TextDecoder;
 
 const C_SPACE = ' '.charCodeAt(0);
 
+const LOR = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus dignissim magna non mi ullamcorper, et varius ex pretium. Vestibulum suscipit libero vel enim cursus tempor. Vivamus rutrum, sapien sed sagittis rhoncus, nunc sapien lacinia neque, sit amet sagittis ipsum massa pellentesque nunc. Etiam dictum facilisis tellus vel sagittis. Donec vel bibendum tellus, in finibus quam. Vivamus vitae finibus quam. Quisque tristique ante eget aliquam mollis. Cras diam neque, congue vitae neque a, venenatis pretium lorem. Nunc semper luctus lacinia. Duis id sagittis ex. In malesuada malesuada interdum. Proin consectetur bibendum ligula, egestas suscipit metus lobortis sed. Integer consequat massa vel justo egestas, eget mollis arcu volutpat. Vestibulum dapibus vulputate lorem, eu pellentesque mi placerat eu. Nullam lobortis ultrices enim sed iaculis.";
+
 function readToPull(read: (view: Uint8Array) => number | null | Promise<number|null>, limitItems=Number.MAX_SAFE_INTEGER): UnderlyingByteSource
 {	let i = 0;
 	return {
@@ -1532,6 +1534,31 @@ Deno.test
 				}
 				assertEquals(text, a==0 ? 'One Two Three Four' : a==1 ? 'Zero One Two Three Four' : '-One Zero One Two Three Four');
 			}
+		}
+	}
+);
+
+Deno.test
+(	'Read through Response object',
+	async () =>
+	{	for (let a=0; a<2; a++) // ReadableStream or RdStream
+		{	let lor = textEncoder.encode(LOR);
+
+			// deno-lint-ignore no-inner-declarations
+			function read(view: Uint8Array)
+			{	if (lor.byteLength == 0)
+				{	return null;
+				}
+				const nRead = Math.min(lor.byteLength, view.byteLength);
+				view.set(lor.subarray(0, nRead));
+				lor = lor.subarray(nRead);
+				return nRead;
+			}
+
+			const rs = a==0 ? new ReadableStream({...readToPull(read)}) : new RdStream({read});
+			const resp = new Response(rs);
+			const text = await resp.text();
+			assertEquals(text, LOR);
 		}
 	}
 );
