@@ -8,6 +8,7 @@ import {assertEquals} from 'https://deno.land/std@0.210.0/assert/assert_equals.t
 type Any = any;
 
 const textEncoder = new TextEncoder;
+const textDecoder = new TextDecoder;
 
 const C_SPACE = ' '.charCodeAt(0);
 
@@ -1472,7 +1473,7 @@ Deno.test
 Deno.test
 (	'pipeThrough: restart + unread',
 	async () =>
-	{	for (let a=0; a<2; a++)
+	{	for (let a=0; a<3; a++)
 		{	const sink = new StringSink;
 			const tokens = new StringStreamer('One Two Three Four');
 			if (a >= 1)
@@ -1497,6 +1498,34 @@ Deno.test
 			const rest = await tokens.text();
 			assertEquals(rest, 'Three Four');
 			await sink.close();
+		}
+	}
+);
+
+Deno.test
+(	'unread',
+	async () =>
+	{	const buffer = new Uint8Array(8);
+		for (let a=0; a<3; a++)
+		{	for (let b=0; b<2; b++)
+			{	const tokens = new StringStreamer('One Two Three Four');
+				if (a >= 1)
+				{	tokens.unread(new TextEncoder().encode('Zero '));
+				}
+				if (a >= 2)
+				{	tokens.unread(new TextEncoder().encode('-One '));
+				}
+				using reader = tokens.getReader();
+				let text = '';
+				while (true)
+				{	const {done, value} = b==0 ? (await reader.read()) : (await reader.read(buffer));
+					if (done)
+					{	break;
+					}
+					text += textDecoder.decode(value);
+				}
+				assertEquals(text, a==0 ? 'One Two Three Four' : a==1 ? 'Zero One Two Three Four' : '-One Zero One Two Three Four');
+			}
 		}
 	}
 );

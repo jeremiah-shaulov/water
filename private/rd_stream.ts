@@ -55,6 +55,7 @@ export type Source =
 
 	/**	Is called as response to `rdStream.cancel()` or `reader.cancel()`.
 		After that, no more callbacks are called (except `catch()`).
+		If this callback is not set, the default behavior is to read and discard the stream to the end.
 	 **/
 	cancel?(reason: Any): void | PromiseLike<void>;
 
