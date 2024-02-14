@@ -133,29 +133,35 @@ export class CallbackAccessor
 			}
 			else
 			{	try
-				{	if (callbacks)
+				{	let promise;
+					if (callbacks)
 					{	if (this.useAbortNotCancel)
-						{	await callbacks.abort?.(reason);
+						{	promise = callbacks.abort?.(reason);
+						}
+						else if (callbacks.cancel)
+						{	promise = callbacks.cancel(reason);
 						}
 						else
-						{	await
-							(	callbacks.cancel ??
-								(	async () =>
-									{	const buffer = new Uint8Array(DEFAULT_AUTO_ALLOCATE_SIZE);
-										while (true)
-										{	const nRead = await callbacks.read!(buffer);
-											if (!nRead)
-											{	break;
-											}
+						{	promise = this.ready.then
+							(	async () =>
+								{	const buffer = new Uint8Array(DEFAULT_AUTO_ALLOCATE_SIZE);
+									while (true)
+									{	const nRead = await callbacks.read!(buffer);
+										if (!nRead)
+										{	break;
 										}
 									}
-								)
-							)(reason);
+								}
+							);
+							this.ready = promise.then(undefined, () => {});
 						}
 					}
 					cancelCurOp?.();
 					cancelCurOp = undefined;
 					reportClosed?.();
+					if (promise)
+					{	await promise;
+					}
 				}
 				catch (e)
 				{	this.error = e;

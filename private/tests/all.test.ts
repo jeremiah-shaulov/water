@@ -352,7 +352,7 @@ Deno.test
 				return 1;
 			}
 
-			const rs = a==0 ? new ReadableStream({start, ...readToPull(read)}) : new RdStream({start, read});
+			const rs = a==0 ? new ReadableStream({start, ...readToPull(read)}) : new RdStream({start, read, cancel() {}});
 
 			assertEquals(log, ['<start>']);
 
@@ -693,7 +693,7 @@ Deno.test
 				return Math.min(i++, BUFFER_SIZE);
 			}
 
-			const rs = a==0 ? new ReadableStream(readToPull(read)) : new RdStream({read});
+			const rs = a==0 ? new ReadableStream(readToPull(read)) : new RdStream({read, cancel() {}});
 			let b = new Uint8Array(BUFFER_SIZE);
 			let r = rs.getReader({mode: 'byob'});
 			try
@@ -849,10 +849,11 @@ Deno.test
 		{	for (let a=0; a<2; a++) // ReadableStream or RdStream
 			{	let i = 1;
 				const all = new Set<ArrayBufferLike>;
+				let timer;
 
 				// deno-lint-ignore no-inner-declarations
 				async function read(view: Uint8Array)
-				{	await new Promise(y => setTimeout(y, 3 - i%3));
+				{	await new Promise(y => timer = setTimeout(y, 3 - i%3));
 					all.add(view.buffer);
 					for (let j=0; j<i && j<BUFFER_SIZE; j++)
 					{	view[j] = i;
@@ -945,6 +946,8 @@ Deno.test
 				const r22 = rs2.getReader();
 				const res2 = await r22.read();
 				assertEquals(res2.done, true);
+
+				clearTimeout(timer);
 			}
 		}
 	}
@@ -1350,11 +1353,12 @@ Deno.test
 	{	const BUFFER_SIZE = 13;
 		let i = 1;
 		const all = new Set<ArrayBufferLike>;
+		let timer;
 		const rs = new RdStream
 		(	{	autoAllocateMin: BUFFER_SIZE,
 
 				async read(view)
-				{	await new Promise(y => setTimeout(y, 3 - i%3));
+				{	await new Promise(y => timer = setTimeout(y, 3 - i%3));
 					assertEquals(view.byteLength >= BUFFER_SIZE, true);
 					all.add(view.buffer);
 					for (let j=0; j<i && j<BUFFER_SIZE; j++)
@@ -1380,6 +1384,8 @@ Deno.test
 		assertEquals(rs.locked, false);
 
 		assertEquals(all.size, 1);
+
+		clearTimeout(timer);
 	}
 );
 
