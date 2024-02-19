@@ -270,6 +270,14 @@ export class RdStream extends ReadableStream<Uint8Array>
 	{	return this.#locked;
 	}
 
+	get isClosed()
+	{	return this.#callbackAccessor.isClosed;
+	}
+
+	get closed()
+	{	return this.#callbackAccessor.closed;
+	}
+
 	// constructor:
 
 	constructor(source: Source)

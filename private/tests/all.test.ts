@@ -168,6 +168,40 @@ class CopyOneToken extends TrStream
 }
 
 Deno.test
+(	'isClosed',
+	async () =>
+	{	let lor = textEncoder.encode(LOR);
+
+		function read(view: Uint8Array)
+		{	if (lor.byteLength == 0)
+			{	return null;
+			}
+			const nRead = Math.min(lor.byteLength, view.byteLength);
+			view.set(lor.subarray(0, nRead));
+			lor = lor.subarray(nRead);
+			return nRead;
+		}
+
+		const rs = new RdStream({read});
+		let isClosed = false;
+		rs.closed.then(() => isClosed = true);
+		const reader = rs.getReader();
+
+		assertEquals(isClosed, false);
+		assertEquals(rs.isClosed, false);
+		assertEquals(reader.isClosed, false);
+
+		const text = await reader.text();
+
+		assertEquals(text, LOR);
+
+		assertEquals(isClosed, true);
+		assertEquals(rs.isClosed, true);
+		assertEquals(reader.isClosed, true);
+	}
+);
+
+Deno.test
 (	'Reader: Callbacks',
 	async () =>
 	{	for (let c=0; c<3; c++) // cancel doesn't throw, cancel throws before awaiting, cancel throws after awaiting

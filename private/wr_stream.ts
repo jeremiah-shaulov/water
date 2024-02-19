@@ -95,6 +95,14 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 	{	return this.#locked;
 	}
 
+	get isClosed()
+	{	return this.#callbackAccessor.isClosed;
+	}
+
+	get closed()
+	{	return this.#callbackAccessor.closed;
+	}
+
 	/**	Returns object that allows to write data to the stream.
 		The stream becomes locked till this writer is released by calling `writer.releaseLock()` or `writer[Symbol.dispose]()`.
 

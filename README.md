@@ -106,10 +106,10 @@ Additional features:
 # Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'https://deno.land/x/water@v1.0.9/mod.ts';
-import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.9/mod.ts';
-import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.9/mod.ts';
-import {TooBigError} from 'https://deno.land/x/water@v1.0.9/mod.ts';
+import {RdStream, Source} from 'https://deno.land/x/water@v1.0.10/mod.ts';
+import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.10/mod.ts';
+import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.10/mod.ts';
+import {TooBigError} from 'https://deno.land/x/water@v1.0.10/mod.ts';
 ```
 
 - [RdStream](#class-rdstream)
@@ -168,7 +168,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'https://deno.land/x/water@v1.0.9/mod.ts';
+import {RdStream} from 'https://deno.land/x/water@v1.0.10/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -294,6 +294,14 @@ When somebody wants to start reading this stream, he calls `rdStream.getReader()
 Future calls to `rdStream.getReader()` will throw error till the reader is released (`reader.releaseLock()`).
 
 Other operations that read the stream (like `rdStream.pipeTo()`) also lock it (internally they get reader, and release it later).
+
+- **isClosed**
+
+```ts
+readonly RdStream.isClosed: boolean;
+```
+
+Becomes true when the stream is read to the end, or after `cancel()` was called.
 
 ### Methods:
 
@@ -488,7 +496,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 ### Example
 
 ```ts
-import {WrStream} from 'https://deno.land/x/water@v1.0.9/mod.ts';
+import {WrStream} from 'https://deno.land/x/water@v1.0.10/mod.ts';
 
 const EMPTY_CHUNK = new Uint8Array;
 
@@ -596,6 +604,14 @@ Future calls to `wrStream.getWriter()` will throw error till the writer is relea
 
 Other operations that write to the stream (like `wrStream.writeWhenReady()`) also lock it (internally they get writer, and release it later).
 
+- **isClosed**
+
+```ts
+readonly WrStream.isClosed: boolean;
+```
+
+Becomes true after `close()` or `abort()` was called.
+
 ### Methods:
 
 - **getWriter**
@@ -662,7 +678,7 @@ The following example demonstrates `TrStream` that encloses the input in `"`-quo
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.9/mod.ts';
+import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.10/mod.ts';
 
 // StringStreamer:
 
@@ -765,7 +781,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.9/mod.ts';
+import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.10/mod.ts';
 
 // StringStreamer:
 

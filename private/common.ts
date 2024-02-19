@@ -26,6 +26,10 @@ export class CallbackAccessor
 	#reportClosed: VoidFunction|undefined;
 	#reportClosedWithError: ((error: Any) => void) | undefined;
 
+	get isClosed()
+	{	return !this.#callbacks;
+	}
+
 	constructor(callbacks: Callbacks, private useAbortNotCancel: boolean)
 	{	this.#callbacks = callbacks;
 		this.closed = new Promise<void>
@@ -211,6 +215,10 @@ export class ReaderOrWriter<SomeCallbackAccessor extends CallbackAccessor>
 		{	throw new TypeError('Reader or writer has no associated stream.');
 		}
 		return callbackAccessor;
+	}
+
+	get isClosed()
+	{	return !this.callbackAccessor ? true : this.callbackAccessor.isClosed;
 	}
 
 	get closed()
