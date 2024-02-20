@@ -273,9 +273,9 @@ export class Writer extends ReaderOrWriter<WriteCallbackAccessor>
 	/**	Writes the chunk by calling `sink.write()`
 		till the whole chunk is written (if `sink.write()` returns `0`, throws error).
 	 **/
-	async write(chunk: Uint8Array)
+	async write(chunk: Uint8Array|string)
 	{	this.#desiredSize = 0;
-		await this.getCallbackAccessor().writeAll(chunk);
+		await this.getCallbackAccessor().writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
 		this.#desiredSize = DEFAULT_AUTO_ALLOCATE_SIZE; // if i don't reach this line of code, the `desiredSize` must remain `0`
 	}
 
