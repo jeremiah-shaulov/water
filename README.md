@@ -607,7 +607,7 @@ readonly WrStream.locked: boolean;
 When somebody wants to start writing to this stream, he calls `wrStream.getWriter()`, and after that call the stream becomes locked.
 Future calls to `wrStream.getWriter()` will throw error till the writer is released (`writer.releaseLock()`).
 
-Other operations that write to the stream (like `wrStream.writeWhenReady()`) also lock it (internally they get writer, and release it later).
+Other operations that write to the stream (like `wrStream.write()`) also lock it (internally they get writer, and release it later).
 
 - **isClosed**
 
@@ -660,10 +660,10 @@ function WrStream.close(): Promise<void>;
 Calls `sink.close()`. After that no more callbacks will be called.
 If `close()` called again on already closed stream, nothing happens (no error is thrown).
 
-- **writeWhenReady**
+- **write**
 
 ```ts
-function WrStream.writeWhenReady(chunk: Uint8Array|string): Promise<void>;
+function WrStream.write(chunk: Uint8Array|string): Promise<void>;
 ```
 Waits for the stream to be unlocked, gets writer (locks the stream),
 writes the chunk, and then releases the writer (unlocks the stream).
@@ -674,10 +674,10 @@ This is the same as doing:
 }
 ```
 
-- **flushWhenReady**
+- **flush**
 
 ```ts
-function WrStream.flushWhenReady(): Promise<void>;
+function WrStream.flush(): Promise<void>;
 ```
 Waits for the stream to be unlocked, gets writer (locks the stream),
 flushes the stream, and then releases the writer (unlocks the stream).

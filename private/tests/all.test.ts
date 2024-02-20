@@ -1308,7 +1308,7 @@ Deno.test
 				{	const ws = new WrStream(conn);
 					let data = DATA;
 					while (data.byteLength)
-					{	await ws.writeWhenReady(data.subarray(0, GEN_CHUNK_SIZE));
+					{	await ws.write(data.subarray(0, GEN_CHUNK_SIZE));
 						data = data.subarray(GEN_CHUNK_SIZE);
 						await new Promise(y => setTimeout(y, 2));
 					}
@@ -1614,8 +1614,8 @@ Deno.test
 				}
 			}
 		);
-		await ws.writeWhenReady('Text');
-		await ws.flushWhenReady();
+		await ws.write('Text');
+		await ws.flush();
 		await ws.close();
 		assertEquals(log, ['write(Text)', 'flush', 'close']);
 	}

@@ -97,7 +97,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 	/**	When somebody wants to start writing to this stream, he calls `wrStream.getWriter()`, and after that call the stream becomes locked.
 		Future calls to `wrStream.getWriter()` will throw error till the writer is released (`writer.releaseLock()`).
 
-		Other operations that write to the stream (like `wrStream.writeWhenReady()`) also lock it (internally they get writer, and release it later).
+		Other operations that write to the stream (like `wrStream.write()`) also lock it (internally they get writer, and release it later).
 	 **/
 	get locked()
 	{	return this.#locked;
@@ -166,6 +166,19 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 	{	return this.#callbackAccessor.close();
 	}
 
+	/**	Use `write()` instead.
+		@deprecated
+	 **/
+	async writeWhenReady(chunk: Uint8Array|string)
+	{	const writer = await this.getWriterWhenReady();
+		try
+		{	await this.#callbackAccessor.writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
+		}
+		finally
+		{	writer.releaseLock();
+		}
+	}
+
 	/**	Waits for the stream to be unlocked, gets writer (locks the stream),
 		writes the chunk, and then releases the writer (unlocks the stream).
 		This is the same as doing:
@@ -175,7 +188,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 		}
 		```
 	 **/
-	async writeWhenReady(chunk: Uint8Array|string)
+	async write(chunk: Uint8Array|string)
 	{	const writer = await this.getWriterWhenReady();
 		try
 		{	await this.#callbackAccessor.writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
@@ -194,7 +207,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 		}
 		```
 	 **/
-	async flushWhenReady()
+	async flush()
 	{	const writer = await this.getWriterWhenReady();
 		try
 		{	await this.#callbackAccessor.useCallbacks(callbacks => callbacks.flush?.());
