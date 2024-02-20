@@ -6,6 +6,8 @@ type Any = any;
 export const _closeEvenIfLocked = Symbol('_closeEvenIfLocked');
 export const _useLowLevelCallbacks = Symbol('_useLowLevelCallbacks');
 
+const textEncoder = new TextEncoder;
+
 type SinkInternal =
 {	start?(): void | PromiseLike<void>;
 	write(chunk: Uint8Array, canReturnZero: boolean): number | PromiseLike<number>;
@@ -166,10 +168,10 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 		}
 		```
 	 **/
-	async writeWhenReady(chunk: Uint8Array)
+	async writeWhenReady(chunk: Uint8Array|string)
 	{	const writer = await this.getWriterWhenReady();
 		try
-		{	await this.#callbackAccessor.writeAll(chunk);
+		{	await this.#callbackAccessor.writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
 		}
 		finally
 		{	writer.releaseLock();
