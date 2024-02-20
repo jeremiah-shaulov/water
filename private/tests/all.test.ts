@@ -1477,42 +1477,6 @@ Deno.test
 );
 
 Deno.test
-(	'Writer',
-	async () =>
-	{	for (let a=0; a<2; a++) // WritableStream or WrStream
-		{	let src = new Uint8Array(3*1024);
-			for (let i=0; i<src.byteLength; i++)
-			{	src[i] = Math.floor(Math.random() * 255);
-			}
-			const dest = new Uint8Array(src.byteLength);
-			let destLen = 0;
-
-			// deno-lint-ignore no-inner-declarations
-			async function write(chunk: Uint8Array)
-			{	await new Promise(y => setTimeout(y, 3 - destLen/3%3));
-				assertEquals(chunk.buffer.byteLength, src.buffer.byteLength);
-				let i = 0;
-				for (; i<3 && i<chunk.byteLength; i++)
-				{	dest[destLen++] = chunk[i];
-				}
-				return i;
-			}
-
-			const ws = a==0 ? new WritableStream(writeToWrite(write)) : new WrStream({write});
-			assertEquals(ws.locked, false);
-			const w = ws.getWriter();
-			while (src.byteLength > 0)
-			{	const copyLen = Math.floor(Math.random() * 255);
-				await w.write(src.subarray(0, copyLen));
-				src = src.subarray(copyLen);
-			}
-			src = new Uint8Array(src.buffer);
-			assertEquals(src, dest);
-		}
-	}
-);
-
-Deno.test
 (	'pipeThrough: restart + unread',
 	async () =>
 	{	for (let a=0; a<3; a++)
@@ -1594,5 +1558,65 @@ Deno.test
 			const text = await resp.text();
 			assertEquals(text, LOR);
 		}
+	}
+);
+
+Deno.test
+(	'Writer',
+	async () =>
+	{	for (let a=0; a<2; a++) // WritableStream or WrStream
+		{	let src = new Uint8Array(3*1024);
+			for (let i=0; i<src.byteLength; i++)
+			{	src[i] = Math.floor(Math.random() * 255);
+			}
+			const dest = new Uint8Array(src.byteLength);
+			let destLen = 0;
+
+			// deno-lint-ignore no-inner-declarations
+			async function write(chunk: Uint8Array)
+			{	await new Promise(y => setTimeout(y, 3 - destLen/3%3));
+				assertEquals(chunk.buffer.byteLength, src.buffer.byteLength);
+				let i = 0;
+				for (; i<3 && i<chunk.byteLength; i++)
+				{	dest[destLen++] = chunk[i];
+				}
+				return i;
+			}
+
+			const ws = a==0 ? new WritableStream(writeToWrite(write)) : new WrStream({write});
+			assertEquals(ws.locked, false);
+			const w = ws.getWriter();
+			while (src.byteLength > 0)
+			{	const copyLen = Math.floor(Math.random() * 255);
+				await w.write(src.subarray(0, copyLen));
+				src = src.subarray(copyLen);
+			}
+			src = new Uint8Array(src.buffer);
+			assertEquals(src, dest);
+		}
+	}
+);
+
+Deno.test
+(	'Writer: flush',
+	async () =>
+	{	const log = new Array<string>;
+		const ws = new WrStream
+		(	{	write(chunk)
+				{	log.push(`write(${new TextDecoder().decode(chunk)})`);
+					return chunk.byteLength;
+				},
+				flush()
+				{	log.push('flush');
+				},
+				close()
+				{	log.push('close');
+				}
+			}
+		);
+		await ws.writeWhenReady('Text');
+		await ws.flushWhenReady();
+		await ws.close();
+		assertEquals(log, ['write(Text)', 'flush', 'close']);
 	}
 );

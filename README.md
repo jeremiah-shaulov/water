@@ -566,6 +566,11 @@ type Sink =
 	 **/
 	write(chunk: Uint8Array): number | PromiseLike<number>;
 
+	/**	This method is called as response to `writer.flush()`.
+		If this writer implements buffering, this callback is expected to send the buffer contents.
+	 **/
+	flush?(): void | PromiseLike<void>;
+
 	/**	This method is called as response to `writer.close()`.
 		After that, no more callbacks are called.
 	 **/
@@ -653,11 +658,12 @@ function WrStream.close(): Promise<void>;
 ```
 
 Calls `sink.close()`. After that no more callbacks will be called.
+If `close()` called again on already closed stream, nothing happens (no error is thrown).
 
 - **writeWhenReady**
 
 ```ts
-function WrStream.writeWhenReady(chunk: Uint8Array): Promise<void>;
+function WrStream.writeWhenReady(chunk: Uint8Array|string): Promise<void>;
 ```
 Waits for the stream to be unlocked, gets writer (locks the stream),
 writes the chunk, and then releases the writer (unlocks the stream).
@@ -665,6 +671,20 @@ This is the same as doing:
 ```ts
 {	using writer = await wrStream.getWriterWhenReady();
 	await writer.write(chunk);
+}
+```
+
+- **flushWhenReady**
+
+```ts
+function WrStream.flushWhenReady(): Promise<void>;
+```
+Waits for the stream to be unlocked, gets writer (locks the stream),
+flushes the stream, and then releases the writer (unlocks the stream).
+This is the same as doing:
+```ts
+{	using writer = await wrStream.getWriterWhenReady();
+	await writer.flush();
 }
 ```
 

@@ -11,6 +11,7 @@ const textEncoder = new TextEncoder;
 type SinkInternal =
 {	start?(): void | PromiseLike<void>;
 	write(chunk: Uint8Array, canReturnZero: boolean): number | PromiseLike<number>;
+	flush?(): void | PromiseLike<void>;
 	close?(): void | PromiseLike<void>;
 	abort?(reason: Any): void | PromiseLike<void>;
 	catch?(reason: Any): void | PromiseLike<void>;
@@ -40,6 +41,11 @@ export type Sink =
 		This callback must not return 0.
 	 **/
 	write(chunk: Uint8Array): number | PromiseLike<number>;
+
+	/**	This method is called as response to `writer.flush()`.
+		If this writer implements buffering, this callback is expected to send the buffer contents.
+	 **/
+	flush?(): void | PromiseLike<void>;
 
 	/**	This method is called as response to `writer.close()`.
 		After that, no more callbacks are called.
@@ -147,6 +153,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 	}
 
 	/**	Calls `sink.close()`. After that no more callbacks will be called.
+		If `close()` called again on already closed stream, nothing happens (no error is thrown).
 	 **/
 	close()
 	{	if (this.#locked)
@@ -172,6 +179,25 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 	{	const writer = await this.getWriterWhenReady();
 		try
 		{	await this.#callbackAccessor.writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
+		}
+		finally
+		{	writer.releaseLock();
+		}
+	}
+
+	/**	Waits for the stream to be unlocked, gets writer (locks the stream),
+		flushes the stream, and then releases the writer (unlocks the stream).
+		This is the same as doing:
+		```ts
+		{	using writer = await wrStream.getWriterWhenReady();
+			await writer.flush();
+		}
+		```
+	 **/
+	async flushWhenReady()
+	{	const writer = await this.getWriterWhenReady();
+		try
+		{	await this.#callbackAccessor.useCallbacks(callbacks => callbacks.flush?.());
 		}
 		finally
 		{	writer.releaseLock();
@@ -245,6 +271,10 @@ export class Writer extends ReaderOrWriter<WriteCallbackAccessor>
 		const result = await this.getCallbackAccessor().useCallbacks(callbacks);
 		this.#desiredSize = DEFAULT_AUTO_ALLOCATE_SIZE; // if i don't reach this line of code, the `desiredSize` must remain `0`
 		return result;
+	}
+
+	async flush()
+	{	await this.getCallbackAccessor().useCallbacks(callbacks => callbacks.flush?.());
 	}
 
 	close(): Promise<void>
