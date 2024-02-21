@@ -867,6 +867,28 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	async text(label?: string, options?: TextDecoderOptions & {lengthLimit?: number})
 	{	return new TextDecoder(label, options).decode(await this.uint8Array(options));
 	}
+
+	/**	Declares that this object is capable of no-transfer read. This allows the user to distinguish
+		between built-in `ReadableStreamDefaultReader` (`ReadableStreamBYOBReader`) and this object.
+
+		```ts
+			function task(rs: ReadableStream<Uint8Array>)
+			{	const reader = rs.getReader();
+				try
+				{	if ('capNoTransferRead' in reader)
+					{	// Use more efficient algorithm
+					}
+					else
+					{	// Use less efficient algorithm
+					}
+				}
+				finally
+				{	reader.releaseLock();
+				}
+			}
+		```
+	 **/
+	readonly capNoTransferRead = true;
 }
 
 class ReadableStreamIterator implements AsyncIterableIterator<Uint8Array>
