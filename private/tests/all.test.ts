@@ -1521,14 +1521,26 @@ Deno.test
 				if (a >= 2)
 				{	tokens.unread(new TextEncoder().encode('-One '));
 				}
-				using reader = tokens.getReader();
 				let text = '';
-				while (true)
-				{	const {done, value} = b==0 ? (await reader.read()) : (await reader.read(buffer));
-					if (done)
-					{	break;
+				if (b == 0)
+				{	using reader = tokens.getReader();
+					while (true)
+					{	const {done, value} = await reader.read();
+						if (done)
+						{	break;
+						}
+						text += textDecoder.decode(value);
 					}
-					text += textDecoder.decode(value);
+				}
+				else
+				{	using reader = tokens.getReader({mode: 'byob'});
+					while (true)
+					{	const {done, value} = await reader.read(buffer);
+						if (done)
+						{	break;
+						}
+						text += textDecoder.decode(value);
+					}
 				}
 				assertEquals(text, a==0 ? 'One Two Three Four' : a==1 ? 'Zero One Two Three Four' : '-One Zero One Two Three Four');
 			}

@@ -259,7 +259,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 	#callbackAccessor: ReadCallbackAccessor;
 	#locked = false;
-	#readerRequests = new Array<(reader: (ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Reader) => void>;
+	#readerRequests = new Array<(reader: (ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Omit<Reader, 'read'>) => void>;
 
 	/**	When somebody wants to start reading this stream, he calls `rdStream.getReader()`, and after that call the stream becomes locked.
 		Future calls to `rdStream.getReader()` will throw error till the reader is released (`reader.releaseLock()`).
@@ -347,9 +347,9 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is already locked, this method throws error.
 	 **/
-	getReader(options?: {mode?: undefined}): ReadableStreamDefaultReader<Uint8Array> & Reader;
-	getReader(options: {mode: 'byob'}): ReadableStreamBYOBReader & Reader;
-	getReader(_options?: {mode?: 'byob'}): (ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Reader
+	getReader(options?: {mode?: undefined}): ReadableStreamDefaultReader<Uint8Array> & Omit<Reader, 'read'>;
+	getReader(options: {mode: 'byob'}): ReadableStreamBYOBReader & Omit<Reader, 'read'>;
+	getReader(_options?: {mode?: 'byob'}): (ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Omit<Reader, 'read'>
 	{	if (this.#locked)
 		{	throw new TypeError('ReadableStream is locked.');
 		}
@@ -368,13 +368,13 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 	/**	Like `rdStream.getReader()`, but waits for the stream to become unlocked before returning the reader (and so locking it again).
 	 **/
-	getReaderWhenReady(options?: {mode?: undefined}): Promise<ReadableStreamDefaultReader<Uint8Array> & Reader>;
-	getReaderWhenReady(options: {mode: 'byob'}): Promise<ReadableStreamBYOBReader & Reader>;
-	getReaderWhenReady(_options?: {mode?: 'byob'}): Promise<(ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Reader>
+	getReaderWhenReady(options?: {mode?: undefined}): Promise<ReadableStreamDefaultReader<Uint8Array> & Omit<Reader, 'read'>>;
+	getReaderWhenReady(options: {mode: 'byob'}): Promise<ReadableStreamBYOBReader & Omit<Reader, 'read'>>;
+	getReaderWhenReady(_options?: {mode?: 'byob'}): Promise<(ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Omit<Reader, 'read'>>
 	{	if (!this.#locked)
 		{	return Promise.resolve(this.getReader());
 		}
-		return new Promise<(ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Reader>(y => {this.#readerRequests.push(y)});
+		return new Promise<(ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Omit<Reader, 'read'>>(y => {this.#readerRequests.push(y)});
 	}
 
 	/**	Interrupt current reading operation (reject the promise that `reader.read()` returned, if any),
