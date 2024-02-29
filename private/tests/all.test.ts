@@ -1605,6 +1605,16 @@ Deno.test
 			}
 			src = new Uint8Array(src.buffer);
 			assertEquals(src, dest);
+
+			await w.close();
+			let error;
+			try
+			{	await w.write(src.subarray(0, 10));
+			}
+			catch (e)
+			{	error = e;
+			}
+			assertEquals(error instanceof TypeError, true);
 		}
 	}
 );

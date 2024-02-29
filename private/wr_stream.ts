@@ -8,6 +8,10 @@ export const _useLowLevelCallbacks = Symbol('_useLowLevelCallbacks');
 
 const textEncoder = new TextEncoder;
 
+export class ClosedError extends TypeError
+{
+}
+
 type SinkInternal =
 {	start?(): void | PromiseLike<void>;
 	write(chunk: Uint8Array, canReturnZero: boolean): number | PromiseLike<number>;
@@ -226,7 +230,7 @@ export class WrStream extends WrStreamInternal
 
 export class WriteCallbackAccessor extends CallbackAccessor
 {	writeAll(chunk: Uint8Array)
-	{	return this.useCallbacks
+	{	const result = this.useCallbacks
 		(	callbacks =>
 			{	while (chunk.byteLength > 0)
 				{	const resultOrPromise = callbacks.write!(chunk, false);
@@ -256,6 +260,10 @@ export class WriteCallbackAccessor extends CallbackAccessor
 				}
 			}
 		);
+		if (!result)
+		{	throw new ClosedError('Writer closed');
+		}
+		return result;
 	}
 }
 
