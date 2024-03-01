@@ -24,7 +24,7 @@ export class Piper
 		let lastWriteCanReturnZero = true; // last write call was with `canReturnZero` flag
 		let writePromise: number | PromiseLike<number> | undefined; // pending write operation that writes from the buffer
 		let writerClosed = false;
-		writerClosedPromise.then(() => {writerClosed = true});
+		writerClosedPromise.then(() => {writerClosed = true}, () => {writerClosed = true});
 		// Assume: 0 <= readPos2 <= writePos <= readPos <= bufferSize
 		// Can read to `buffer[readPos .. bufferSize]`, and then to `buffer[readPos2 .. writePos]`
 		// Can write from `buffer[writePos .. readPos]`, and then `buffer[0 .. readPos2]` will become `buffer[writePos .. readPos]` (will set readPos to readPos2, writePos to 0, and readPos2 to 0)
@@ -224,7 +224,7 @@ export class Piper
 		}
 		catch (e)
 		{	// Await writePromise
-			if (writePromise)
+			if (typeof(writePromise) == 'object')
 			{	try
 				{	await writePromise;
 				}
