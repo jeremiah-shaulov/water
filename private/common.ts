@@ -104,6 +104,12 @@ export class CallbackAccessor
 		}
 	}
 
+	schedule<T>(task: () => T | PromiseLike<T>)
+	{	const promise = this.ready.then(task);
+		this.ready = promise.then(undefined, () => {});
+		return promise;
+	}
+
 	async close(isCancelOrAbort=false, reason?: Any)
 	{	const waitBeforeClose = this.waitBeforeClose;
 		const callbacks = this.#callbacks;
@@ -147,7 +153,7 @@ export class CallbackAccessor
 						{	promise = callbacks.cancel(reason);
 						}
 						else
-						{	promise = this.ready.then
+						{	promise = this.schedule
 							(	async () =>
 								{	const buffer = new Uint8Array(DEFAULT_AUTO_ALLOCATE_SIZE);
 									while (true)
@@ -158,7 +164,6 @@ export class CallbackAccessor
 									}
 								}
 							);
-							this.ready = promise.then(undefined, () => {});
 						}
 					}
 					cancelCurOp?.();
@@ -177,7 +182,12 @@ export class CallbackAccessor
 
 		if (this.error!=undefined && callbacks?.catch)
 		{	try
-			{	await callbacks.catch(this.error);
+			{	if (isCancelOrAbort) // `cancel()` and `abort()` work not inside `useCallbacks()`
+				{	await this.schedule(() => callbacks.catch!(this.error));
+				}
+				else
+				{	await callbacks.catch(this.error);
+				}
 			}
 			catch
 			{	// ok
@@ -186,7 +196,12 @@ export class CallbackAccessor
 
 		if (callbacks?.finally)
 		{	try
-			{	await callbacks.finally();
+			{	if (isCancelOrAbort) // `cancel()` and `abort()` work not inside `useCallbacks()`
+				{	await this.schedule(() => callbacks.finally!());
+				}
+				else
+				{	await callbacks.finally();
+				}
 			}
 			catch (e)
 			{	try

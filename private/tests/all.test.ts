@@ -1118,7 +1118,7 @@ Deno.test
 					}
 				)
 			);
-			console.log((a==0 ? 'ReadableStream: time ' : a==1 ? 'RdStream.from(ReadableStream): time ' : 'new RdStream(Deno.Reader): ') + (Date.now() - startTime)/1000 + 'sec');
+			console.log((a==0 ? 'Use `deno run` (not `deno test`) to get real numbes.\nReadableStream: time ' : a==1 ? 'RdStream.from(ReadableStream): time ' : 'new RdStream(Deno.Reader): ') + (Date.now() - startTime)/1000 + 'sec');
 			assertEquals(nBytes, SEND_N_BYTES*N_IN_PARALLEL);
 			if (a >= 1)
 			{	assertEquals(all.size, N_IN_PARALLEL);
@@ -1226,7 +1226,7 @@ Deno.test
 					}
 				)
 			);
-			console.log((a==0 ? 'ReadableStream: time ' : a==1 ? 'RdStream.from(ReadableStream): time ' : 'new RdStream(Deno.Reader): ') + (Date.now() - startTime)/1000 + 'sec');
+			console.log((a==0 ? 'Use `deno run` (not `deno test`) to get real numbes.\nReadableStream: time ' : a==1 ? 'RdStream.from(ReadableStream): time ' : 'new RdStream(Deno.Reader): ') + (Date.now() - startTime)/1000 + 'sec');
 			assertEquals(nBytes, SEND_N_BYTES*N_IN_PARALLEL);
 			if (a >= 1)
 			{	assertEquals(all.size, N_IN_PARALLEL);
