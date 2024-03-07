@@ -44,8 +44,7 @@ export class CallbackAccessor
 		if (startPromise)
 		{	this.ready = new Promise<void>
 			(	y =>
-				{	this.#cancelCurOp = y;
-					startPromise.then
+				{	startPromise.then
 					(	y,
 						e =>
 						{	this.error = e;

@@ -204,7 +204,7 @@ Deno.test
 Deno.test
 (	'Reader: Callbacks',
 	async () =>
-	{	for (let c=0; c<3; c++) // cancel doesn't throw, cancel throws before awaiting, cancel throws after awaiting
+	{	for (let c=0; c<4; c++) // cancel doesn't throw, cancel throws before awaiting, cancel throws after awaiting
 		{	for (let a=0; a<2; a++) // ReadableStream or RdStream
 			{	let i = 0;
 				const log = new Array<string>;
@@ -231,7 +231,7 @@ Deno.test
 					if (c == 1)
 					{	throw new Error('Cancel failed');
 					}
-					await new Promise(y => setTimeout(y, 50));
+					await new Promise(y => setTimeout(y, 100));
 					if (c == 2)
 					{	throw new Error('Cancel failed');
 					}
@@ -242,16 +242,35 @@ Deno.test
 
 				assertEquals(log, ['<start>']);
 
+				if (c == 3)
+				{	const promise = rs.cancel();
+					assertEquals(log, ['<start>', '<cancel>']);
+					await promise;
+					assertEquals(log, ['<start>', '<cancel>', '</start>', '</cancel>']);
+				}
+
 				const r = rs.getReader();
 				r.closed.then(() => log.push('closed'), e => log.push('closed with error: '+e));
 				let promise = r.read();
 
-				assertEquals(log, ['<start>']);
+				if (c != 3)
+				{	assertEquals(log, ['<start>']);
+				}
+				else
+				{	assertEquals(log, ['<start>', '<cancel>', '</start>', '</cancel>']);
+				}
 
 				let res = await promise;
 
-				assertEquals(log, ['<start>', '</start>', '<read>', '</read>']);
-				assertEquals(res, {done: false, value: new Uint8Array([0])});
+				if (c != 3)
+				{	assertEquals(log, ['<start>', '</start>', '<read>', '</read>']);
+					assertEquals(res, {done: false, value: new Uint8Array([0])});
+				}
+				else
+				{	assertEquals(log, ['<start>', '<cancel>', '</start>', '</cancel>', 'closed']);
+					assertEquals(res, {done: true, value: undefined});
+					continue;
+				}
 
 				promise = r.read();
 				await new Promise(y => setTimeout(y, 1));
