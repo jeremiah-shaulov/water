@@ -231,8 +231,11 @@ export class WrStream extends WrStreamInternal
 }
 
 export class WriteCallbackAccessor extends CallbackAccessor
-{	writeAll(chunk: Uint8Array)
-	{	const result = this.useCallbacks
+{	writeAll(chunk: Uint8Array): Promise<void>
+	{	if (chunk.byteLength == 0)
+		{	return Promise.resolve();
+		}
+		const result = this.useCallbacks
 		(	callbacks =>
 			{	while (chunk.byteLength > 0)
 				{	const resultOrPromise = callbacks.write!(chunk, false);
@@ -256,16 +259,18 @@ export class WriteCallbackAccessor extends CallbackAccessor
 									}
 									chunk = chunk.subarray(nWritten);
 								}
+								return true;
 							}
 						);
 					}
 				}
+				return true;
 			}
 		);
 		if (!result)
-		{	throw new ClosedError('Writer closed');
+		{	return Promise.reject(new ClosedError('Writer closed'));
 		}
-		return result;
+		return result.then(result => result ? undefined : Promise.reject(new ClosedError('Writer closed')));
 	}
 }
 
