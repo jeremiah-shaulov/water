@@ -107,10 +107,10 @@ Additional features:
 # Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'https://deno.land/x/water@v1.0.18/mod.ts';
-import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.18/mod.ts';
-import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.18/mod.ts';
-import {TooBigError} from 'https://deno.land/x/water@v1.0.18/mod.ts';
+import {RdStream, Source} from 'https://deno.land/x/water@v1.0.19/mod.ts';
+import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.19/mod.ts';
+import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.19/mod.ts';
+import {TooBigError} from 'https://deno.land/x/water@v1.0.19/mod.ts';
 ```
 
 - [RdStream](#class-rdstream)
@@ -169,7 +169,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'https://deno.land/x/water@v1.0.18/mod.ts';
+import {RdStream} from 'https://deno.land/x/water@v1.0.19/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -233,14 +233,16 @@ type Source =
 	read(view: Uint8Array): number | null | PromiseLike<number|null>;
 
 	/**	This method is called when {@link Source.read} returns `0` or `null` that indicate EOF.
-		After that, no more callbacks are called (except `catch()`).
+		After that, no more callbacks are called (except `catch()` and/or `finally()`).
 		If you use `Deno.Reader & Deno.Closer` as source, that source will be closed when read to the end without error.
 	 **/
 	close?(): void | PromiseLike<void>;
 
 	/**	Is called as response to `rdStream.cancel()` or `reader.cancel()`.
-		After that, no more callbacks are called (except `catch()`).
+		After that, no more callbacks are called (except `catch()` and/or `finally()`).
 		If this callback is not set, the default behavior is to read and discard the stream to the end.
+		This callback can be called in the middle of `read()` (before it's promise fulfilled), to let
+		you interrupt the reading operation.
 	 **/
 	cancel?(reason: any): void | PromiseLike<void>;
 
@@ -497,7 +499,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 ### Example
 
 ```ts
-import {WrStream} from 'https://deno.land/x/water@v1.0.18/mod.ts';
+import {WrStream} from 'https://deno.land/x/water@v1.0.19/mod.ts';
 
 const EMPTY_CHUNK = new Uint8Array;
 
@@ -573,12 +575,14 @@ type Sink =
 	flush?(): void | PromiseLike<void>;
 
 	/**	This method is called as response to `writer.close()`.
-		After that, no more callbacks are called.
+		After that, no more callbacks are called (except `catch()` and/or `finally()`).
 	 **/
 	close?(): void | PromiseLike<void>;
 
 	/**	This method is called as response to `wrStream.abort(reason)` or `writer.abort(reason)`.
-		After that, no more callbacks are called.
+		After that, no more callbacks are called (except `catch()` and/or `finally()`).
+		This callback can be called in the middle of `write()` (before it's promise fulfilled), to let
+		you interrupt the writing operation.
 	 **/
 	abort?(reason: any): void | PromiseLike<void>;
 
@@ -699,7 +703,7 @@ The following example demonstrates `TrStream` that encloses the input in `"`-quo
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.18/mod.ts';
+import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.19/mod.ts';
 
 // StringStreamer:
 
@@ -802,7 +806,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.18/mod.ts';
+import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.19/mod.ts';
 
 // StringStreamer:
 

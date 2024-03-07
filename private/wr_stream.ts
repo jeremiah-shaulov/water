@@ -52,12 +52,14 @@ export type Sink =
 	flush?(): void | PromiseLike<void>;
 
 	/**	This method is called as response to `writer.close()`.
-		After that, no more callbacks are called.
+		After that, no more callbacks are called (except `catch()` and/or `finally()`).
 	 **/
 	close?(): void | PromiseLike<void>;
 
 	/**	This method is called as response to `wrStream.abort(reason)` or `writer.abort(reason)`.
-		After that, no more callbacks are called.
+		After that, no more callbacks are called (except `catch()` and/or `finally()`).
+		This callback can be called in the middle of `write()` (before it's promise fulfilled), to let
+		you interrupt the writing operation.
 	 **/
 	abort?(reason: Any): void | PromiseLike<void>;
 

@@ -69,16 +69,11 @@ export class CallbackAccessor
 					{	try
 						{	const resultOrPromise = useCallbacks(callbacks);
 							if (typeof(resultOrPromise)=='object' && resultOrPromise!=null && 'then' in resultOrPromise)
-							{	return new Promise<T | undefined>
-								(	(y, n) =>
-									{	this.#cancelCurOp = y;
-										resultOrPromise.then
-										(	y,
-											e =>
-											{	this.error = e;
-												return this.close().then(() => n(e), () => n(e));
-											}
-										);
+							{	return resultOrPromise.then
+								(	undefined,
+									e =>
+									{	this.error = e;
+										return this.close().then(() => Promise.reject(e), () => Promise.reject(e));
 									}
 								);
 							}
@@ -97,7 +92,12 @@ export class CallbackAccessor
 				}
 			);
 			this.ready = promise.then(undefined, () => {});
-			return promise;
+			return new Promise<T | undefined>
+			(	(y, n) =>
+				{	this.#cancelCurOp = y;
+					promise.then(y, n);
+				}
+			);
 		}
 		else if (this.error != undefined)
 		{	throw this.error;

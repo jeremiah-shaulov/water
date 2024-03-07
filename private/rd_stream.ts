@@ -49,14 +49,16 @@ export type Source =
 	read(view: Uint8Array): number | null | PromiseLike<number|null>;
 
 	/**	This method is called when {@link Source.read} returns `0` or `null` that indicate EOF.
-		After that, no more callbacks are called (except `catch()`).
+		After that, no more callbacks are called (except `catch()` and/or `finally()`).
 		If you use `Deno.Reader & Deno.Closer` as source, that source will be closed when read to the end without error.
 	 **/
 	close?(): void | PromiseLike<void>;
 
 	/**	Is called as response to `rdStream.cancel()` or `reader.cancel()`.
-		After that, no more callbacks are called (except `catch()`).
+		After that, no more callbacks are called (except `catch()` and/or `finally()`).
 		If this callback is not set, the default behavior is to read and discard the stream to the end.
+		This callback can be called in the middle of `read()` (before it's promise fulfilled), to let
+		you interrupt the reading operation.
 	 **/
 	cancel?(reason: Any): void | PromiseLike<void>;
 
