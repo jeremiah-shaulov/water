@@ -228,46 +228,44 @@ export class WrStream extends WrStreamInternal
 }
 
 export class WriteCallbackAccessor extends CallbackAccessor
-{	writeAll(chunk: Uint8Array): Promise<void>
-	{	if (chunk.byteLength == 0)
-		{	return Promise.resolve();
-		}
-		const result = this.useCallbacks
-		(	callbacks =>
-			{	while (chunk.byteLength > 0)
-				{	const resultOrPromise = callbacks.write!(chunk, false);
-					if (typeof(resultOrPromise) == 'number')
-					{	if (resultOrPromise == 0)
-						{	throw new Error('write() returned 0 during writeAll()');
+{	async writeAll(chunk: Uint8Array)
+	{	if (chunk.byteLength > 0)
+		{	const result = this.useCallbacks
+			(	callbacks =>
+				{	while (chunk.byteLength > 0)
+					{	const resultOrPromise = callbacks.write!(chunk, false);
+						if (typeof(resultOrPromise) == 'number')
+						{	if (resultOrPromise == 0)
+							{	throw new Error('write() returned 0 during writeAll()');
+							}
+							chunk = chunk.subarray(resultOrPromise);
 						}
-						chunk = chunk.subarray(resultOrPromise);
-					}
-					else
-					{	return resultOrPromise.then
-						(	async nWritten =>
-							{	if (nWritten == 0)
-								{	throw new Error('write() returned 0 during writeAll()');
-								}
-								chunk = chunk.subarray(nWritten);
-								while (chunk.byteLength > 0)
-								{	nWritten = await callbacks.write!(chunk, false);
-									if (nWritten == 0)
+						else
+						{	return resultOrPromise.then
+							(	async nWritten =>
+								{	if (nWritten == 0)
 									{	throw new Error('write() returned 0 during writeAll()');
 									}
 									chunk = chunk.subarray(nWritten);
+									while (chunk.byteLength > 0)
+									{	nWritten = await callbacks.write!(chunk, false);
+										if (nWritten == 0)
+										{	throw new Error('write() returned 0 during writeAll()');
+										}
+										chunk = chunk.subarray(nWritten);
+									}
+									return true;
 								}
-								return true;
-							}
-						);
+							);
+						}
 					}
+					return true;
 				}
-				return true;
+			);
+			if (!result || !await result)
+			{	throw new ClosedError('Writer closed');
 			}
-		);
-		if (!result)
-		{	return Promise.reject(new ClosedError('Writer closed'));
 		}
-		return result.then(result => result ? undefined : Promise.reject(new ClosedError('Writer closed')));
 	}
 }
 

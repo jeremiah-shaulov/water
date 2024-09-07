@@ -1,5 +1,4 @@
 import {Callbacks} from './common.ts';
-import {_useLowLevelCallbacks} from './wr_stream.ts';
 
 export class Piper
 {	private readPos = 0; // read to `buffer[readPos ..]`
