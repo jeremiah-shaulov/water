@@ -139,9 +139,9 @@ export class CallbackAccessor
 				}
 			}
 			else
-			{	try
-				{	let promise;
-					if (callbacks)
+			{	let promise;
+				try
+				{	if (callbacks)
 					{	if (this.useAbortNotCancel)
 						{	promise = callbacks.abort?.(reason);
 						}
@@ -162,16 +162,22 @@ export class CallbackAccessor
 							);
 						}
 					}
-					cancelCurOp?.();
-					cancelCurOp = undefined;
-					reportClosed?.();
-					if (promise)
-					{	await promise;
-					}
 				}
 				catch (e)
 				{	this.error = e;
-					cancelCurOp?.();
+				}
+				cancelCurOp?.();
+				cancelCurOp = undefined;
+				if (this.error == undefined)
+				{	reportClosed?.();
+				}
+				if (promise)
+				{	try
+					{	await promise;
+					}
+					catch (e)
+					{	this.error = e;
+					}
 				}
 			}
 		}
