@@ -1,8 +1,5 @@
 import {_useLowLevelCallbacks} from './wr_stream.ts';
 
-// deno-lint-ignore no-explicit-any
-type Any = any;
-
 export class TeeRegular
 {	#promise = Promise.resolve();
 	#buffered = new Uint8Array;
@@ -79,7 +76,7 @@ export class TeeRegular
 		}
 	}
 
-	cancel(reason: Any, nReader: -1|1)
+	cancel(reason: unknown, nReader: -1|1)
 	{	if (this.#cancelledNReader == 0)
 		{	this.#cancelledNReader = nReader;
 			if (this.#bufferedFor == nReader)
@@ -145,7 +142,7 @@ export class TeeRequireParallelRead
 		}
 	}
 
-	cancel(reason: Any, nReader: -1|1)
+	cancel(reason: unknown, nReader: -1|1)
 	{	if (this.#cancelledNReader == 0)
 		{	this.#cancelledNReader = nReader;
 			if (this.#resolve && this.#doingNReader!=nReader)

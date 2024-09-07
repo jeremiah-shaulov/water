@@ -2,30 +2,27 @@
  **/
 export const DEFAULT_AUTO_ALLOCATE_SIZE = 32*1024;
 
-// deno-lint-ignore no-explicit-any
-type Any = any;
-
 export type Callbacks =
 {	start?(): void | PromiseLike<void>;
 	read?(view: Uint8Array): number | null | PromiseLike<number|null>;
 	write?(chunk: Uint8Array, canReturnZero: boolean): number | PromiseLike<number>;
 	flush?(): void | PromiseLike<void>;
 	close?(): void | PromiseLike<void>;
-	cancel?(reason: Any): void | PromiseLike<void>;
-	abort?(reason: Any): void | PromiseLike<void>;
-	catch?(reason: Any): void | PromiseLike<void>;
+	cancel?(reason: unknown): void | PromiseLike<void>;
+	abort?(reason: unknown): void | PromiseLike<void>;
+	catch?(reason: unknown): void | PromiseLike<void>;
 	finally?(): void | PromiseLike<void>;
 };
 
 export class CallbackAccessor
 {	closed: Promise<void>;
-	error: Any;
+	error: unknown;
 	ready: Promise<void>;
 	waitBeforeClose: Promise<unknown>|undefined; // Promise that will be awaited before closing the stream. It must not throw (reject).
 	#callbacks: Callbacks|undefined;
 	#cancelCurOp: ((value?: undefined) => void) | undefined;
 	#reportClosed: VoidFunction|undefined;
-	#reportClosedWithError: ((error: Any) => void) | undefined;
+	#reportClosedWithError: ((error: unknown) => void) | undefined;
 
 	get isClosed()
 	{	return !this.#callbacks;
@@ -109,7 +106,7 @@ export class CallbackAccessor
 		return promise;
 	}
 
-	async close(isCancelOrAbort=false, reason?: Any)
+	async close(isCancelOrAbort=false, reason?: unknown)
 	{	const waitBeforeClose = this.waitBeforeClose;
 		const callbacks = this.#callbacks;
 		let cancelCurOp = this.#cancelCurOp;

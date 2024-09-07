@@ -1,8 +1,5 @@
 import {DEFAULT_AUTO_ALLOCATE_SIZE, Callbacks, CallbackAccessor, ReaderOrWriter} from './common.ts';
 
-// deno-lint-ignore no-explicit-any
-type Any = any;
-
 export const _closeEvenIfLocked = Symbol('_closeEvenIfLocked');
 export const _useLowLevelCallbacks = Symbol('_useLowLevelCallbacks');
 
@@ -17,8 +14,8 @@ type SinkInternal =
 	write(chunk: Uint8Array, canReturnZero: boolean): number | PromiseLike<number>;
 	flush?(): void | PromiseLike<void>;
 	close?(): void | PromiseLike<void>;
-	abort?(reason: Any): void | PromiseLike<void>;
-	catch?(reason: Any): void | PromiseLike<void>;
+	abort?(reason: unknown): void | PromiseLike<void>;
+	catch?(reason: unknown): void | PromiseLike<void>;
 };
 
 export type Sink =
@@ -61,13 +58,13 @@ export type Sink =
 		This callback can be called in the middle of `write()` (before it's promise fulfilled), to let
 		you interrupt the writing operation.
 	 **/
-	abort?(reason: Any): void | PromiseLike<void>;
+	abort?(reason: unknown): void | PromiseLike<void>;
 
 	/**	This method is called when {@link Sink.write} thrown exception or returned a rejected promise.
 		After that, no more callbacks are called.
 		Exceptions in `catch()` are silently ignored.
 	 **/
-	catch?(reason: Any): void | PromiseLike<void>;
+	catch?(reason: unknown): void | PromiseLike<void>;
 
 	/**	Is called when the stream is finished in either way.
 	 **/
@@ -154,7 +151,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 
 		In contrast to `WritableStream.abort()`, this method works even if the stream is locked.
 	 **/
-	abort(reason?: Any)
+	abort(reason?: unknown)
 	{	return this.#callbackAccessor.close(true, reason);
 	}
 
@@ -309,7 +306,7 @@ export class Writer extends ReaderOrWriter<WriteCallbackAccessor>
 	{	return this.getCallbackAccessor().close();
 	}
 
-	abort(reason?: Any)
+	abort(reason?: unknown)
 	{	return this.getCallbackAccessor().close(true, reason);
 	}
 }

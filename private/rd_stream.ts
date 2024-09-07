@@ -60,13 +60,13 @@ export type Source =
 		This callback can be called in the middle of `read()` (before it's promise fulfilled), to let
 		you interrupt the reading operation.
 	 **/
-	cancel?(reason: Any): void | PromiseLike<void>;
+	cancel?(reason: unknown): void | PromiseLike<void>;
 
 	/**	Is called when `start()`, `read()`, `close()` or `cancel()` thrown exception or returned a rejected promise.
 		After that, no more callbacks are called.
 		Exceptions in `catch()` are silently ignored.
 	 **/
-	catch?(reason: Any): void | PromiseLike<void>;
+	catch?(reason: unknown): void | PromiseLike<void>;
 
 	/**	Is called when the stream is finished in either way.
 	 **/
@@ -387,7 +387,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		In contrast to `ReadableStream.cancel()`, this method works even if the stream is locked.
 	 **/
-	cancel(reason?: Any)
+	cancel(reason?: unknown)
 	{	return this.#callbackAccessor.close(true, reason);
 	}
 
@@ -646,7 +646,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		};
 	}
 
-	cancel(reason?: Any)
+	cancel(reason?: unknown)
 	{	return this.getCallbackAccessor().close(true, reason);
 	}
 
