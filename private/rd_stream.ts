@@ -1,4 +1,4 @@
-import {DEFAULT_AUTO_ALLOCATE_SIZE, Callbacks, CallbackAccessor, ReaderOrWriter} from './common.ts';
+import {DEFAULT_AUTO_ALLOCATE_SIZE, Callbacks, CallbackAccessor, ReaderOrWriter, ItResult, ItResultDone, ItResultOpt} from './common.ts';
 import {Writer, _useLowLevelCallbacks} from './wr_stream.ts';
 import {Piper} from './piper.ts';
 import {TeeRegular, TeeRequireParallelRead} from './tee.ts';
@@ -633,9 +633,9 @@ class ReadCallbackAccessor extends CallbackAccessor
 /**	This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.
  **/
 export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
-{	read(): Promise<ReadableStreamDefaultReadResult<Uint8Array>>;
-	read<V extends ArrayBufferView>(view: V): Promise<ReadableStreamBYOBReadResult<V>>;
-	async read<V extends ArrayBufferView>(view?: V): Promise<ReadableStreamBYOBReadResult<V>>
+{	read(): Promise<ItResultOpt<Uint8Array>>;
+	read<V extends ArrayBufferView>(view: V): Promise<ItResultOpt<V>>;
+	async read<V extends ArrayBufferView>(view?: V): Promise<ItResultOpt<V>>
 	{	if (view && !(view instanceof Uint8Array))
 		{	throw new Error('Only Uint8Array is supported'); // i always return `Uint8Array`, and it must be also `V`
 		}
@@ -902,21 +902,21 @@ class ReadableStreamIterator implements AsyncIterableIterator<Uint8Array>
 	{	return this;
 	}
 
-	async next(): Promise<IteratorResult<Uint8Array>>
+	async next(): Promise<ItResult<Uint8Array>>
 	{	const {value, done} = await this.reader.read();
-		if (value?.byteLength || !done)
-		{	return {value, done: false};
+		if (done || !value.byteLength)
+		{	return await this.return();
 		}
-		return await this.return();
+		return {value, done: false};
 	}
 
 	// deno-lint-ignore require-await
-	async return(value?: Uint8Array): Promise<IteratorResult<Uint8Array>>
+	async return(value?: Uint8Array): Promise<ItResultDone<Uint8Array>>
 	{	this[Symbol.dispose]();
 		return {value, done: true};
 	}
 
-	throw(): Promise<IteratorResult<Uint8Array>>
+	throw(): Promise<ItResultDone<Uint8Array>>
 	{	return this.return();
 	}
 

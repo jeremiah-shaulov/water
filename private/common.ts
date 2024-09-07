@@ -2,6 +2,13 @@
  **/
 export const DEFAULT_AUTO_ALLOCATE_SIZE = 32*1024;
 
+export type ItResultValue<T> = {done: false, value: T}; // Built-in types in deno libraries are frequently renamed and changed, so i need to have my own definitions
+export type ItResultDone<T> = {done: true, value: T|undefined};
+export type ItResult<T> = ItResultValue<T> | ItResultDone<T>;
+
+export type ItResultDoneOpt<T> = {done: true, value?: T};
+export type ItResultOpt<T> = ItResultValue<T> | ItResultDoneOpt<T>;
+
 export type Callbacks =
 {	start?(): void | PromiseLike<void>;
 	read?(view: Uint8Array): number | null | PromiseLike<number|null>;
@@ -15,13 +22,13 @@ export type Callbacks =
 };
 
 export class CallbackAccessor
-{	closed: Promise<void>;
+{	closed: Promise<undefined>; // Definition in deno built-in type is recently changed from `Promise<void>` to `Promise<undefined>`
 	error: unknown;
-	ready: Promise<void>;
+	ready: Promise<undefined>; // Definition in deno built-in type is recently changed from `Promise<void>` to `Promise<undefined>`
 	waitBeforeClose: Promise<unknown>|undefined; // Promise that will be awaited before closing the stream. It must not throw (reject).
 	#callbacks: Callbacks|undefined;
 	#cancelCurOp: ((value?: undefined) => void) | undefined;
-	#reportClosed: VoidFunction|undefined;
+	#reportClosed: ((value?: undefined) => void) | undefined;
 	#reportClosedWithError: ((error: unknown) => void) | undefined;
 
 	get isClosed()
@@ -30,7 +37,7 @@ export class CallbackAccessor
 
 	constructor(callbacks: Callbacks, private useAbortNotCancel: boolean)
 	{	this.#callbacks = callbacks;
-		this.closed = new Promise<void>
+		this.closed = new Promise<undefined>
 		(	(y, n) =>
 			{	this.#reportClosed = y;
 				this.#reportClosedWithError = n;
@@ -49,10 +56,10 @@ export class CallbackAccessor
 						}
 					);
 				}
-			);
+			) as Promise<undefined>;
 		}
 		else
-		{	this.ready = Promise.resolve();
+		{	this.ready = Promise.resolve(undefined);
 		}
 	}
 
@@ -87,7 +94,7 @@ export class CallbackAccessor
 					}
 				}
 			);
-			this.ready = promise.then(undefined, () => {});
+			this.ready = promise.then(undefined, () => undefined);
 			return new Promise<T | undefined>
 			(	(y, n) =>
 				{	this.#cancelCurOp = y;
@@ -102,7 +109,7 @@ export class CallbackAccessor
 
 	schedule<T>(task: () => T | PromiseLike<T>)
 	{	const promise = this.ready.then(task);
-		this.ready = promise.then(undefined, () => {});
+		this.ready = promise.then(undefined, () => undefined);
 		return promise;
 	}
 
@@ -240,7 +247,7 @@ export class ReaderOrWriter<SomeCallbackAccessor extends CallbackAccessor>
 	}
 
 	get closed()
-	{	return !this.callbackAccessor ? Promise.resolve() : this.callbackAccessor.closed;
+	{	return !this.callbackAccessor ? Promise.resolve(undefined) : this.callbackAccessor.closed;
 	}
 
 	releaseLock()

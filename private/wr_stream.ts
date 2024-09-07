@@ -191,13 +191,15 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 		}
 		```
 	 **/
-	async write(chunk: Uint8Array|string)
-	{	const writer = await this.getWriterWhenReady();
-		try
-		{	await this.#callbackAccessor.writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
-		}
-		finally
-		{	writer.releaseLock();
+	async write(chunk?: Uint8Array|string)
+	{	if (chunk)
+		{	const writer = await this.getWriterWhenReady();
+			try
+			{	await this.#callbackAccessor.writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
+			}
+			finally
+			{	writer.releaseLock();
+			}
 		}
 	}
 
@@ -277,16 +279,18 @@ export class Writer extends ReaderOrWriter<WriteCallbackAccessor>
 	}
 
 	get ready()
-	{	return this.callbackAccessor?.ready ?? Promise.resolve();
+	{	return this.callbackAccessor?.ready ?? Promise.resolve(undefined);
 	}
 
 	/**	Writes the chunk by calling `sink.write()`
 		till the whole chunk is written (if `sink.write()` returns `0`, throws error).
 	 **/
-	async write(chunk: Uint8Array|string)
-	{	this.#desiredSize = 0;
-		await this.getCallbackAccessor().writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
-		this.#desiredSize = DEFAULT_AUTO_ALLOCATE_SIZE; // if i don't reach this line of code, the `desiredSize` must remain `0`
+	async write(chunk?: Uint8Array|string)
+	{	if (chunk)
+		{	this.#desiredSize = 0;
+			await this.getCallbackAccessor().writeAll(typeof(chunk)=='string' ? textEncoder.encode(chunk) : chunk);
+			this.#desiredSize = DEFAULT_AUTO_ALLOCATE_SIZE; // if i don't reach this line of code, the `desiredSize` must remain `0`
+		}
 	}
 
 	async [_useLowLevelCallbacks]<T>(callbacks: (callbacks: Callbacks) => T | PromiseLike<T>)

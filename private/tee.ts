@@ -1,3 +1,4 @@
+import {ItResultOpt} from './common.ts';
 import {_useLowLevelCallbacks} from './wr_stream.ts';
 
 export class TeeRegular
@@ -91,7 +92,7 @@ export class TeeRegular
 
 export class TeeRequireParallelRead
 {	#doingNReader: -1|0|1 = 0;
-	#promise = Promise.resolve({} as ReadableStreamBYOBReadResult<Uint8Array>);
+	#promise = Promise.resolve({} as ItResultOpt<Uint8Array>);
 	#resolve: VoidFunction|undefined;
 	#secondReaderOffset = 0;
 	#cancelledNReader: -1|0|1 = 0;
