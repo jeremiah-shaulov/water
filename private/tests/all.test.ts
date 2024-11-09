@@ -2,7 +2,7 @@
 // rm -rf .vscode/coverage/profile && deno test --fail-fast --allow-all --coverage=.vscode/coverage/profile private/tests/all.test.ts && deno coverage --unstable .vscode/coverage/profile --lcov > .vscode/coverage/lcov.info
 
 import {RdStream, TrStream, WrStream} from '../../mod.ts';
-import {assertEquals} from 'https://deno.land/std@0.210.0/assert/assert_equals.ts';
+import {assertEquals} from 'jsr:@std/assert@1.0.7/equals';
 
 // deno-lint-ignore no-explicit-any
 type Any = any;
@@ -142,7 +142,7 @@ class StringSink extends WrStream
 		);
 	}
 
-	toString()
+	override toString()
 	{	return this.value;
 	}
 }
@@ -286,7 +286,7 @@ Deno.test
 				assertEquals(log, ['<start>', '</start>', '<read>', '</read>', '<read>', '<cancel>', 'closed']);
 				assertEquals(res, {done: true, value: undefined});
 
-				let error;
+				let error: Any;
 				try
 				{	await promise2;
 				}
@@ -342,7 +342,7 @@ Deno.test
 
 			assertEquals(log, ['<start>']);
 
-			let error;
+			let error: Any;
 			try
 			{	await promise;
 			}
@@ -370,7 +370,7 @@ Deno.test
 				return 1;
 			}
 
-			let error;
+			let error: Any;
 			try
 			{	a==0 ? new ReadableStream({start, ...readToPull(read)}) : new RdStream({start, read});
 			}
@@ -646,7 +646,7 @@ Deno.test
 					assertEquals(res.value === undefined, true);
 				}
 				else
-				{	let error;
+				{	let error: Any;
 					try
 					{	await r.read(new Uint8Array(b.buffer, 0, b.buffer.byteLength));
 					}
@@ -709,7 +709,7 @@ Deno.test
 			}
 			catch (e)
 			{	assertEquals(e instanceof TypeError, true);
-				assertEquals(e.message, a==0 ? 'Reader has no associated stream.' : 'Reader or writer has no associated stream.');
+				assertEquals(e instanceof TypeError ? e.message : '', a==0 ? 'Reader has no associated stream.' : 'Reader or writer has no associated stream.');
 			}
 
 			r = rs.getReader({mode: 'byob'});
@@ -720,7 +720,7 @@ Deno.test
 			}
 			catch (e)
 			{	assertEquals(e instanceof TypeError, true);
-				assertEquals(e.message, a==0 ? 'The reader was released.' : 'Reader or writer has no associated stream.');
+				assertEquals(e instanceof TypeError ? e.message : '', a==0 ? 'The reader was released.' : 'Reader or writer has no associated stream.');
 			}
 
 			r.releaseLock();
@@ -756,7 +756,7 @@ Deno.test
 			}
 			catch (e)
 			{	assertEquals(e instanceof TypeError, true);
-				assertEquals(e.message, 'ReadableStream is locked.');
+				assertEquals(e instanceof TypeError ? e.message : '', 'ReadableStream is locked.');
 			}
 			r.releaseLock();
 
@@ -770,7 +770,7 @@ Deno.test
 			}
 			catch (e)
 			{	assertEquals(e instanceof TypeError, true);
-				assertEquals(e.message, 'Cannot cancel a locked ReadableStream.');
+				assertEquals(e instanceof TypeError ? e.message : '', 'Cannot cancel a locked ReadableStream.');
 			}
 			r.releaseLock();
 

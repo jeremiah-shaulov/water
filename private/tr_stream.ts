@@ -46,11 +46,11 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 	/**	Input for the original stream.
 		All the bytes written here will be transformed by this object, and will be available for reading from `TrStream.readable`.
 	 **/
-	readonly writable: WrStream;
+	override readonly writable: WrStream;
 
 	/**	Outputs the transformed stream.
 	 **/
-	readonly readable: RdStream;
+	override readonly readable: RdStream;
 
 	constructor(transformer: Transformer)
 	{	super();

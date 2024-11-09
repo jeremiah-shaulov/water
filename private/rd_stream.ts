@@ -13,10 +13,18 @@ export class TooBigError extends Error
 {
 }
 
-export type Source =
-{	// properties:
+/**	The same as `StreamPipeOptions` in `lib.deno.web.d.ts`
+	If `StreamPipeOptions` will be renamed, this will not break my code.
+ **/
+interface StreamPipeOptionsLocal
+{	preventAbort?: boolean;
+	preventCancel?: boolean;
+	preventClose?: boolean;
+	signal?: AbortSignal;
+}
 
-	/**	When auto-allocating (reading in non-byob mode) will pass to {@link Source.read} buffers of at most this size.
+export type Source =
+{	/**	When auto-allocating (reading in non-byob mode) will pass to {@link Source.read} buffers of at most this size.
 		If undefined or non-positive number, a predefined default value (like 32 KiB) is used.
 	 **/
 	autoAllocateChunkSize?: number;
@@ -82,9 +90,7 @@ export type Source =
 	- No transferring buffers that you pass to `reader.read(buffer)`, so the buffers remain usable after the call.
  **/
 export class RdStream extends ReadableStream<Uint8Array>
-{	// static:
-
-	/**	Constructs `RdStream` from an iterable of `Uint8Array`.
+{	/**	Constructs `RdStream` from an iterable of `Uint8Array`.
 		Note that `ReadableStream<Uint8Array>` is also iterable of `Uint8Array`, so it can be converted to `RdStream`,
 		and the resulting `RdStream` will be a wrapper on it.
 
@@ -103,7 +109,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 		console.log(await rdStream2.text());
 		```
 	 **/
-	static from<R>(source: AsyncIterable<R> | Iterable<R | PromiseLike<R>>): ReadableStream<R> & RdStream
+	static override from<R>(source: AsyncIterable<R> | Iterable<R | PromiseLike<R>>): ReadableStream<R> & RdStream
 	{	if (source instanceof RdStream)
 		{	return source as Any;
 		}
@@ -268,7 +274,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		Other operations that read the stream (like `rdStream.pipeTo()`) also lock it (internally they get reader, and release it later).
 	 **/
-	get locked()
+	override get locked()
 	{	return this.#locked;
 	}
 
@@ -349,9 +355,9 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is already locked, this method throws error.
 	 **/
-	getReader(options?: {mode?: undefined}): ReadableStreamDefaultReader<Uint8Array> & Omit<Reader, 'read'>;
-	getReader(options: {mode: 'byob'}): ReadableStreamBYOBReader & Omit<Reader, 'read'>;
-	getReader(_options?: {mode?: 'byob'}): (ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Omit<Reader, 'read'>
+	override getReader(options?: {mode?: undefined}): ReadableStreamDefaultReader<Uint8Array> & Omit<Reader, 'read'>;
+	override getReader(options: {mode: 'byob'}): ReadableStreamBYOBReader & Omit<Reader, 'read'>;
+	override getReader(_options?: {mode?: 'byob'}): (ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Omit<Reader, 'read'>
 	{	if (this.#locked)
 		{	throw new TypeError('ReadableStream is locked.');
 		}
@@ -387,7 +393,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		In contrast to `ReadableStream.cancel()`, this method works even if the stream is locked.
 	 **/
-	cancel(reason?: unknown)
+	override cancel(reason?: unknown)
 	{	return this.#callbackAccessor.close(true, reason);
 	}
 
@@ -426,7 +432,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	[Symbol.asyncIterator](options?: {preventCancel?: boolean})
+	override [Symbol.asyncIterator](options?: {preventCancel?: boolean})
 	{	return new ReadableStreamIterator(this.getReader(), options?.preventCancel===true);
 	}
 
@@ -453,7 +459,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	values(options?: {preventCancel?: boolean})
+	override values(options?: {preventCancel?: boolean})
 	{	return new ReadableStreamIterator(this.getReader(), options?.preventCancel===true);
 	}
 
@@ -469,7 +475,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	tee(options?: {requireParallelRead?: boolean}): [RdStream, RdStream]
+	override tee(options?: {requireParallelRead?: boolean}): [RdStream, RdStream]
 	{	return this.getReader().tee(options);
 	}
 
@@ -483,7 +489,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	async pipeTo(dest: WritableStream<Uint8Array>, options?: PipeOptions)
+	override async pipeTo(dest: WritableStream<Uint8Array>, options?: StreamPipeOptionsLocal)
 	{	const reader = this.getReader();
 		try
 		{	return await reader.pipeTo(dest, options);
@@ -499,12 +505,12 @@ export class RdStream extends ReadableStream<Uint8Array>
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	pipeThrough<T, W extends WritableStream<Uint8Array>, R extends ReadableStream<T>>
+	override pipeThrough<T, W extends WritableStream<Uint8Array>, R extends ReadableStream<T>>
 	(	transform:
 		{	readonly writable: W;
 			readonly readable: R;
 		},
-		options?: PipeOptions
+		options?: StreamPipeOptionsLocal
 	)
 	{	const waitBeforeClose = this.pipeTo(transform.writable, options).then(undefined, () => {});
 		const {readable} = transform;
@@ -704,7 +710,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		If destination closes or enters error state, then `pipeTo()` throws exception.
 		But then `pipeTo()` can be called again to continue piping the rest of the stream to another destination (including previously buffered data).
 	 **/
-	async pipeTo(dest: WritableStream<Uint8Array>, options?: PipeOptions)
+	async pipeTo(dest: WritableStream<Uint8Array>, options?: StreamPipeOptionsLocal)
 	{	const callbackAccessor = this.getCallbackAccessor();
 		const writer = dest.getWriter();
 		try
@@ -783,7 +789,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		{	readonly writable: W;
 			readonly readable: R;
 		},
-		options?: PipeOptions
+		options?: StreamPipeOptionsLocal
 	)
 	{	const waitBeforeClose = this.pipeTo(transform.writable, options).then(undefined, () => {});
 		const {readable} = transform;

@@ -102,7 +102,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 
 		Other operations that write to the stream (like `wrStream.write()`) also lock it (internally they get writer, and release it later).
 	 **/
-	get locked()
+	override get locked()
 	{	return this.#locked;
 	}
 
@@ -119,7 +119,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 
 		If the stream is already locked, this method throws error.
 	 **/
-	getWriter(): WritableStreamDefaultWriter<Uint8Array> & Writer
+	override getWriter(): WritableStreamDefaultWriter<Uint8Array> & Writer
 	{	if (this.#locked)
 		{	throw new TypeError('WritableStream is locked.');
 		}
@@ -151,14 +151,14 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 
 		In contrast to `WritableStream.abort()`, this method works even if the stream is locked.
 	 **/
-	abort(reason?: unknown)
+	override abort(reason?: unknown)
 	{	return this.#callbackAccessor.close(true, reason);
 	}
 
 	/**	Calls `sink.close()`. After that no more callbacks will be called.
 		If `close()` called again on already closed stream, nothing happens (no error is thrown).
 	 **/
-	close()
+	override close()
 	{	if (this.#locked)
 		{	throw new TypeError('WritableStream is locked.');
 		}

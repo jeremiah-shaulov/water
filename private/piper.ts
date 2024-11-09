@@ -59,13 +59,19 @@ export class Piper
 					writePromise = callbackWriteInverting(buffer.subarray(writePos, readPos), lastWriteCanReturnZero);
 				}
 				// Await for the fastest promise
-				let size =
-				(	typeof(readPromise)=='number' || readPromise===null ? // If result is ready (not promise)
-						readPromise :
-					typeof(writePromise)=='number' ? // If result is ready (not promise)
-						writePromise :
-						await (!readPromise ? writePromise : !writePromise ? readPromise : Promise.race([readPromise, writePromise]))
-				);
+				let size: number|null|undefined;
+				if (typeof(readPromise) == 'number')
+				{	size = readPromise;
+				}
+				else if (readPromise === null)
+				{	size = 0;
+				}
+				else if (typeof(writePromise) == 'number')
+				{	size = writePromise;
+				}
+				else
+				{	size = await (!readPromise ? writePromise : !writePromise ? readPromise : Promise.race([readPromise, writePromise]));
+				}
 				// Now we have either read or written something
 				if (!size)
 				{	// Read EOF
