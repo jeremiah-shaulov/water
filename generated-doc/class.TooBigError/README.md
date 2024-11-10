@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {TooBigError} from "https://deno.land/x/water@v1.0.23/mod.ts"
+import {TooBigError} from "https://deno.land/x/water@v1.0.24/mod.ts"
 ```
 
 ## This class has

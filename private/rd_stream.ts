@@ -333,8 +333,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 					{	set: v =>
 						{	hackishEnabled = true;
 							Object.defineProperty(this, _hackishReader, desc); // restore the original descriptor
-							// @ts-expect-error Call super
-							this[_hackishReader] = v;
+							(this as Any)[_hackishReader] = v;
 						}
 					}
 				);
@@ -642,14 +641,20 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 {	read(): Promise<ItResultOpt<Uint8Array>>;
 	read<V extends ArrayBufferView>(view: V): Promise<ItResultOpt<V>>;
 	async read<V extends ArrayBufferView>(view?: V): Promise<ItResultOpt<V>>
-	{	if (view && !(view instanceof Uint8Array))
-		{	throw new Error('Only Uint8Array is supported'); // i always return `Uint8Array`, and it must be also `V`
+	{	if (!view)
+		{	const view2 = await this.getCallbackAccessor().read();
+			return {value: view2 as Any, done: !view2};
 		}
-		const view2 = await this.getCallbackAccessor().read(view);
-		return {
-			value: !view2 ? view?.subarray(0, 0) : view2 as Any,
-			done: !view2,
-		};
+		else
+		{	if (!(view instanceof Uint8Array))
+			{	throw new Error('Only Uint8Array is supported'); // i always return `Uint8Array`, and it must be also `V`
+			}
+			const view2 = await this.getCallbackAccessor().read(view);
+			return {
+				value: (!view2 ? view.subarray(0, 0) : view2) as Any,
+				done: !view2,
+			};
+		}
 	}
 
 	cancel(reason?: unknown)

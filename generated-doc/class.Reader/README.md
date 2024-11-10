@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Reader} from "https://deno.land/x/water@v1.0.23/mod.ts"
+import {Reader} from "https://deno.land/x/water@v1.0.24/mod.ts"
 ```
 
 This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.
@@ -12,9 +12,8 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 
 - [constructor](#-constructorcallbackaccessor-somecallbackaccessor--undefined-onrelease-voidfunction)
 - property [capNoTransferRead](#-readonly-capnotransferread-true)
-- 12 methods:
+- 11 methods:
 [read](#-read-promiseitresultopt),
-[read](#-readv-extends-arraybufferviewview-v-promiseitresultopt),
 [read](#-readv-extends-arraybufferviewview-v-promiseitresultopt),
 [cancel](#-cancelreason-unknown-promisevoid),
 [unread](#-unreadchunk-uint8array-void),
@@ -61,10 +60,6 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 
 
 #### ⚙ read\<V `extends` ArrayBufferView>(view: V): Promise\<ItResultOpt>
-
-
-
-#### ⚙ read\<V `extends` ArrayBufferView>(view?: V): Promise\<ItResultOpt>
 
 
 

@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {RdStream} from "https://deno.land/x/water@v1.0.23/mod.ts"
+import {RdStream} from "https://deno.land/x/water@v1.0.24/mod.ts"
 ```
 
 This class extends `ReadableStream<Uint8Array>`, and can be used as it's substitutor.
@@ -22,13 +22,11 @@ It has the following differences:
 [locked](#-get-locked-boolean),
 [isClosed](#-get-isclosed-boolean),
 [closed](#-get-closed-promiseundefined)
-- 16 methods:
+- 14 methods:
 [getReader](#-getreaderoptions-mode-undefined-readablestreamdefaultreaderuint8array--omitreader-read),
 [getReader](#-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read),
-[getReader](#-getreaderoptions-mode-byob-readablestreambyobreader--readablestreamdefaultreaderuint8array--omitreader-read),
 [getReaderWhenReady](#-getreaderwhenreadyoptions-mode-undefined-promisereadablestreamdefaultreaderuint8array--omitreader-read),
 [getReaderWhenReady](#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--omitreader-read),
-[getReaderWhenReady](#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--readablestreamdefaultreaderuint8array--omitreader-read),
 [cancel](#-cancelreason-unknown-promisevoid),
 [unread](#-unreadchunk-uint8array-void),
 [values](#-valuesoptions-preventcancel-boolean-readablestreamiterator),
@@ -102,10 +100,6 @@ It has the following differences:
 
 
 
-#### ⚙ getReader(\_options?: \{mode?: <mark>"byob"</mark>}): (ReadableStreamBYOBReader | ReadableStreamDefaultReader\<Uint8Array>) \& Omit\<Reader, <mark>"read"</mark>>
-
-
-
 #### ⚙ getReaderWhenReady(options?: \{mode?: `undefined`}): Promise\<ReadableStreamDefaultReader\<Uint8Array> \& Omit\<Reader, <mark>"read"</mark>>>
 
 > Like `rdStream.getReader()`, but waits for the stream to become unlocked before returning the reader (and so locking it again).
@@ -113,10 +107,6 @@ It has the following differences:
 
 
 #### ⚙ getReaderWhenReady(options: \{mode: <mark>"byob"</mark>}): Promise\<ReadableStreamBYOBReader \& Omit\<Reader, <mark>"read"</mark>>>
-
-
-
-#### ⚙ getReaderWhenReady(\_options?: \{mode?: <mark>"byob"</mark>}): Promise\<(ReadableStreamBYOBReader | ReadableStreamDefaultReader\<Uint8Array>) \& Omit\<Reader, <mark>"read"</mark>>>
 
 
 
