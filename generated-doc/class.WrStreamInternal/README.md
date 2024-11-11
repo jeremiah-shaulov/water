@@ -9,14 +9,13 @@
 [locked](#-get-locked-boolean),
 [isClosed](#-get-isclosed-boolean),
 [closed](#-get-closed-promiseundefined)
-- 7 methods:
+- 6 methods:
 [getWriter](#-getwriter-writablestreamdefaultwriteruint8array--writer),
 [getWriterWhenReady](#-getwriterwhenready-promisewritablestreamdefaultwriteruint8array--writer),
 [abort](#-abortreason-unknown-promisevoid),
 [close](#-close-promisevoid),
 [write](#-writechunk-uint8array--string-promisevoid),
-[flush](#-flush-promisevoid),
-[\[\_closeEvenIfLocked\]](#-closeeveniflocked-promisevoid)
+[flush](#-flush-promisevoid)
 - [deprecated symbol](#-deprecated-writewhenreadychunk-uint8array--string-promisevoid)
 
 
@@ -98,10 +97,6 @@
 > 	await writer.flush();
 > }
 > ```
-
-
-
-#### ⚙ \[\_closeEvenIfLocked](): Promise\<`void`>
 
 
 

@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Writer} from "https://deno.land/x/water@v1.0.24/mod.ts"
+import {Writer} from "https://deno.land/x/water@v1.0.25/mod.ts"
 ```
 
 ## This class has
@@ -12,12 +12,11 @@ import {Writer} from "https://deno.land/x/water@v1.0.24/mod.ts"
 - 2 properties:
 [desiredSize](#-get-desiredsize-number),
 [ready](#-get-ready-promiseany)
-- 5 methods:
+- 4 methods:
 [write](#-writechunk-uint8array--string-promisevoid),
 [flush](#-flush-promisevoid),
 [close](#-close-promisevoid),
-[abort](#-abortreason-unknown-promisevoid),
-[\[\_useLowLevelCallbacks\]](#-uselowlevelcallbackstcallbacks-callbacks-callbacks--t--promiseliket-promiset)
+[abort](#-abortreason-unknown-promisevoid)
 - protected property [callbackAccessor](#-protected-callbackaccessor-somecallbackaccessor--undefined)
 
 
@@ -49,10 +48,6 @@ import {Writer} from "https://deno.land/x/water@v1.0.24/mod.ts"
 
 
 #### ⚙ abort(reason?: `unknown`): Promise\<`void`>
-
-
-
-#### ⚙ \[\_useLowLevelCallbacks]\<T>(callbacks: (callbacks: [Callbacks](../type.Callbacks/README.md)) => T | PromiseLike\<T>): Promise\<T>
 
 
 

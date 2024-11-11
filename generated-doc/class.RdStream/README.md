@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {RdStream} from "https://deno.land/x/water@v1.0.24/mod.ts"
+import {RdStream} from "https://deno.land/x/water@v1.0.25/mod.ts"
 ```
 
 This class extends `ReadableStream<Uint8Array>`, and can be used as it's substitutor.
@@ -22,7 +22,7 @@ It has the following differences:
 [locked](#-get-locked-boolean),
 [isClosed](#-get-isclosed-boolean),
 [closed](#-get-closed-promiseundefined)
-- 14 methods:
+- 13 methods:
 [getReader](#-getreaderoptions-mode-undefined-readablestreamdefaultreaderuint8array--omitreader-read),
 [getReader](#-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read),
 [getReaderWhenReady](#-getreaderwhenreadyoptions-mode-undefined-promisereadablestreamdefaultreaderuint8array--omitreader-read),
@@ -35,7 +35,6 @@ It has the following differences:
 [pipeThrough](#-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r),
 [uint8Array](#-uint8arrayoptions-lengthlimit-number-promiseuint8array),
 [text](#-textlabel-string-options-textdecoderoptions--lengthlimit-number-promisestring),
-[\[\_setWaitBeforeClose\]](#-setwaitbeforeclosewaitbeforeclose-promiseunknown-void),
 [\[Symbol.asyncIterator\]](#-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)
 
 
@@ -213,12 +212,6 @@ It has the following differences:
 > a `TooBigError` exception is thrown.
 > 
 > If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
-
-
-
-#### ⚙ \[\_setWaitBeforeClose](waitBeforeClose: Promise\<`unknown`>): `void`
-
-> Set promise that will be awaited before closing the stream. It must not throw (reject).
 
 
 
