@@ -13,6 +13,7 @@
 [read](#-readview-uint8array-promiseuint8array),
 [getOrCreatePiper](#-getorcreatepiper-piper),
 [dropPiper](#-droppipercurpiper-piper-void)
+- 9 inherited members from [CallbackAccessor](../class.CallbackAccessor/README.md)
 
 
 #### 🔧 `constructor`(autoAllocateChunkSize: `number`, autoAllocateMin: `number`, callbacks: [Callbacks](../type.Callbacks/README.md))

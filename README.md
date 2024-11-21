@@ -1,6 +1,6 @@
 <!--
 	This file is generated with the following command:
-	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.37/tsa.ts doc-md --outFile=README.md mod.ts --importUrl https://deno.land/x/water@v1.0.25/mod.ts --mainTitle 'water - Alternative to ReadableStream, WritableStream and TransformStream.' --outUrl https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.25/README.md
+	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.45/tsa.ts doc-md --outFile=README.md mod.ts --importUrl https://deno.land/x/water@v1.0.25/mod.ts --outUrl https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.25/README.md
 -->
 
 # water - Alternative to ReadableStream, WritableStream and TransformStream.
@@ -100,11 +100,11 @@ const wrStream = new WrStream
 
 Additional features:
 
-- [RdStream.cancel()](generated-doc/class.RdStream/README.md#-cancelreason-unknown-promisevoid) and [WrStream.abort()](generated-doc/class.WrStreamInternal/README.md#-abortreason-unknown-promisevoid) work also on locked streams.
-- [getReader()](generated-doc/class.RdStream/README.md#-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read) and [getWriter()](generated-doc/class.WrStreamInternal/README.md#-getwriter-writablestreamdefaultwriteruint8array--writer) have [getReaderWhenReady()](generated-doc/class.RdStream/README.md#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--omitreader-read) and [getWriterWhenReady()](generated-doc/class.WrStreamInternal/README.md#-getwriterwhenready-promisewritablestreamdefaultwriteruint8array--writer) counterparts, that wait for reader/writer to be unlocked.
-- [RdStream.values()](generated-doc/class.RdStream/README.md#-valuesoptions-preventcancel-boolean-readablestreamiterator), [RdStream.tee()](generated-doc/class.RdStream/README.md#-teeoptions-requireparallelread-boolean-rdstream-rdstream), [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) and [RdStream.pipeThrough()](generated-doc/class.RdStream/README.md#-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r) are present in both [RdStream](generated-doc/class.RdStream/README.md) and [Reader](generated-doc/class.Reader/README.md).
+- [RdStream.cancel()](generated-doc/class.RdStream/README.md#-override-cancelreason-unknown-promisevoid) and [WrStream.abort()](generated-doc/class.WrStreamInternal/README.md#-override-abortreason-unknown-promisevoid) work also on locked streams.
+- [getReader()](generated-doc/class.RdStream/README.md#-override-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read) and [getWriter()](generated-doc/class.WrStreamInternal/README.md#-override-getwriter-writablestreamdefaultwriteruint8array--writer) have [getReaderWhenReady()](generated-doc/class.RdStream/README.md#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--omitreader-read) and [getWriterWhenReady()](generated-doc/class.WrStreamInternal/README.md#-getwriterwhenready-promisewritablestreamdefaultwriteruint8array--writer) counterparts, that wait for reader/writer to be unlocked.
+- [RdStream.values()](generated-doc/class.RdStream/README.md#-override-valuesoptions-preventcancel-boolean-readablestreamiterator), [RdStream.tee()](generated-doc/class.RdStream/README.md#-override-teeoptions-requireparallelread-boolean-rdstream-rdstream), [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) and [RdStream.pipeThrough()](generated-doc/class.RdStream/README.md#-override-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r) are present in both [RdStream](generated-doc/class.RdStream/README.md) and [Reader](generated-doc/class.Reader/README.md).
 - Also [RdStream](generated-doc/class.RdStream/README.md) and [Reader](generated-doc/class.Reader/README.md) have additional methods: [uint8Array()](generated-doc/class.RdStream/README.md#-uint8arrayoptions-lengthlimit-number-promiseuint8array), [text()](generated-doc/class.RdStream/README.md#-textlabel-string-options-textdecoderoptions--lengthlimit-number-promisestring) and [unread()](generated-doc/class.RdStream/README.md#-unreadchunk-uint8array-void).
-- [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) and [RdStream.pipeThrough()](generated-doc/class.RdStream/README.md#-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r) are restartable ([Transformer.transform()](generated-doc/type.Transformer/README.md#-transformwriter-writer-chunk-uint8array-canreturnzero-boolean-number--promiselikenumber) can close it's writer, and then the rest of the input stream can be piped to elsewhere).
+- [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) and [RdStream.pipeThrough()](generated-doc/class.RdStream/README.md#-override-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r) are restartable ([Transformer.transform()](generated-doc/type.Transformer/README.md#-transformwriter-writer-chunk-uint8array-canreturnzero-boolean-number--promiselikenumber) can close it's writer, and then the rest of the input stream can be piped to elsewhere).
 - [Reader](generated-doc/class.Reader/README.md) and [Writer](generated-doc/class.Writer/README.md) implement `Symbol.dispose` that releases the lock.
 - [WrStream](generated-doc/class.WrStream/README.md) has [flush](generated-doc/class.WrStreamInternal/README.md#-flush-promisevoid) feature.
 
@@ -166,7 +166,7 @@ To prevent this, use:
 const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 ```
 
-[RdStream.from()](generated-doc/class.RdStream/README.md#-static-fromrsource-asynciterabler--iterabler--promiseliker-readablestreamr--rdstream) also allows to create [RdStream](generated-doc/class.RdStream/README.md) instances from iterable objects that yield `Uint8Array` items (see [RdStream.from()](generated-doc/class.RdStream/README.md#-static-fromrsource-asynciterabler--iterabler--promiseliker-readablestreamr--rdstream)).
+[RdStream.from()](generated-doc/class.RdStream/README.md#-static-override-fromrsource-asynciterabler--iterabler--promiseliker-readablestreamr--rdstream) also allows to create [RdStream](generated-doc/class.RdStream/README.md) instances from iterable objects that yield `Uint8Array` items (see [RdStream.from()](generated-doc/class.RdStream/README.md#-static-override-fromrsource-asynciterabler--iterabler--promiseliker-readablestreamr--rdstream)).
 
 #### Example
 
@@ -235,27 +235,27 @@ When [read()](generated-doc/type.Source/README.md#-readview-uint8array-number--p
 If [read()](generated-doc/type.Source/README.md#-readview-uint8array-number--promiselikenumber) thrown exception, [catch()](generated-doc/type.Source/README.md#-catchreason-unknown-void--promiselikevoid) is called instead of [close()](generated-doc/type.Source/README.md#-close-void--promiselikevoid).
 Also if [read()](generated-doc/type.Source/README.md#-readview-uint8array-number--promiselikenumber) successfully returned EOF, but then [close()](generated-doc/type.Source/README.md#-close-void--promiselikevoid) thrown exception, [catch()](generated-doc/type.Source/README.md#-catchreason-unknown-void--promiselikevoid) is also called.
 
-Stream consumer can decide to cancel the stream by calling [RdStream.cancel()](generated-doc/class.RdStream/README.md#-cancelreason-unknown-promisevoid) or [Reader.cancel()](generated-doc/class.Reader/README.md#-cancelreason-unknown-promisevoid).
+Stream consumer can decide to cancel the stream by calling [RdStream.cancel()](generated-doc/class.RdStream/README.md#-override-cancelreason-unknown-promisevoid) or [Reader.cancel()](generated-doc/class.Reader/README.md#-cancelreason-unknown-promisevoid).
 In this case [cancel()](generated-doc/type.Source/README.md#-cancelreason-unknown-void--promiselikevoid) callback gets called.
 This is the only callback that can be called in the middle of [read()](generated-doc/type.Source/README.md#-readview-uint8array-number--promiselikenumber) work, when asynchronous [read()](generated-doc/type.Source/README.md#-readview-uint8array-number--promiselikenumber) didn't return, so it can tell [read()](generated-doc/type.Source/README.md#-readview-uint8array-number--promiselikenumber) to return earlier.
 If [cancel()](generated-doc/type.Source/README.md#-cancelreason-unknown-void--promiselikevoid) thrown exception, [catch()](generated-doc/type.Source/README.md#-catchreason-unknown-void--promiselikevoid) is called as the last action.
 
 #### Properties:
 
-> 📄 `get` RdStream.[locked](generated-doc/class.RdStream/README.md#-get-locked-boolean)(): `boolean`
+> 📄 `override` `get` RdStream.[locked](generated-doc/class.RdStream/README.md#-override-get-locked-boolean)(): `boolean`
 
-When somebody wants to start reading this stream, he calls [RdStream.getReader()](generated-doc/class.RdStream/README.md#-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read), and after that call the stream becomes locked.
+When somebody wants to start reading this stream, he calls [RdStream.getReader()](generated-doc/class.RdStream/README.md#-override-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read), and after that call the stream becomes locked.
 Future calls to `RdStream.rdStream.getReader()` will throw error till the reader is released ([Reader.releaseLock()](generated-doc/class.ReaderOrWriter/README.md#-releaselock-void)).
 
-Other operations that read the stream (like [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid)) also lock it (internally they get reader, and release it later).
+Other operations that read the stream (like [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid)) also lock it (internally they get reader, and release it later).
 
 > 📄 `get` RdStream.[isClosed](generated-doc/class.RdStream/README.md#-get-isclosed-boolean)(): `boolean`
 
-Becomes true when the stream is read to the end, or after [RdStream.cancel()](generated-doc/class.RdStream/README.md#-cancelreason-unknown-promisevoid) was called.
+Becomes true when the stream is read to the end, or after [RdStream.cancel()](generated-doc/class.RdStream/README.md#-override-cancelreason-unknown-promisevoid) was called.
 
 #### Methods:
 
-> ⚙ RdStream.[getReader](generated-doc/class.RdStream/README.md#-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read)(options: \{mode: <mark>"byob"</mark>}): ReadableStreamBYOBReader \& Omit\<Reader, <mark>"read"</mark>>
+> ⚙ `override` RdStream.[getReader](generated-doc/class.RdStream/README.md#-override-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read)(options: \{mode: <mark>"byob"</mark>}): ReadableStreamBYOBReader \& Omit\<Reader, <mark>"read"</mark>>
 
 Returns object that allows to read data from the stream.
 The stream becomes locked till this reader is released by calling [Reader.releaseLock()](generated-doc/class.ReaderOrWriter/README.md#-releaselock-void) or [Symbol.dispose()](generated-doc/class.ReaderOrWriter/README.md#-symboldispose-void).
@@ -264,9 +264,9 @@ If the stream is already locked, this method throws error.
 
 > ⚙ RdStream.[getReaderWhenReady](generated-doc/class.RdStream/README.md#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--omitreader-read)(options: \{mode: <mark>"byob"</mark>}): Promise\<ReadableStreamBYOBReader \& Omit\<Reader, <mark>"read"</mark>>>
 
-Like [getReader()](generated-doc/class.RdStream/README.md#-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read), but waits for the stream to become unlocked before returning the reader (and so locking it again).
+Like [getReader()](generated-doc/class.RdStream/README.md#-override-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read), but waits for the stream to become unlocked before returning the reader (and so locking it again).
 
-> ⚙ RdStream.[cancel](generated-doc/class.RdStream/README.md#-cancelreason-unknown-promisevoid)(reason?: `unknown`): Promise\<`void`>
+> ⚙ `override` RdStream.[cancel](generated-doc/class.RdStream/README.md#-override-cancelreason-unknown-promisevoid)(reason?: `unknown`): Promise\<`void`>
 
 Interrupt current reading operation (reject the promise that [Reader.read()](generated-doc/class.Reader/README.md#-readv-extends-arraybufferviewview-v-promiseitresultopt) returned, if any),
 and tell to discard further data in the stream.
@@ -281,9 +281,9 @@ In contrast to `ReadableStream.cancel()`, this method works even if the stream i
 Push chunk to the stream, so next read will get it.
 This creates internal buffer, and copies the chunk contents to it.
 
-> ⚙ RdStream.[\[Symbol.asyncIterator\]](generated-doc/class.RdStream/README.md#-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)(options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](generated-doc/private.class.ReadableStreamIterator/README.md)
+> ⚙ `override` RdStream.[\[Symbol.asyncIterator\]](generated-doc/class.RdStream/README.md#-override-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)(options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](generated-doc/private.class.ReadableStreamIterator/README.md)
 
-> ⚙ RdStream.[values](generated-doc/class.RdStream/README.md#-valuesoptions-preventcancel-boolean-readablestreamiterator)(options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](generated-doc/private.class.ReadableStreamIterator/README.md)
+> ⚙ `override` RdStream.[values](generated-doc/class.RdStream/README.md#-override-valuesoptions-preventcancel-boolean-readablestreamiterator)(options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](generated-doc/private.class.ReadableStreamIterator/README.md)
 
 Allows to iterate this stream yielding `Uint8Array` data chunks.
 
@@ -310,7 +310,7 @@ while (true)
 
 If the stream is locked, this method throws error. However you can do [getReaderWhenReady()](generated-doc/class.RdStream/README.md#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--omitreader-read), and call identical method on the reader.
 
-> ⚙ RdStream.[tee](generated-doc/class.RdStream/README.md#-teeoptions-requireparallelread-boolean-rdstream-rdstream)(options?: \{requireParallelRead?: `boolean`}): \[[RdStream](generated-doc/class.RdStream/README.md), [RdStream](generated-doc/class.RdStream/README.md)]
+> ⚙ `override` RdStream.[tee](generated-doc/class.RdStream/README.md#-override-teeoptions-requireparallelread-boolean-rdstream-rdstream)(options?: \{requireParallelRead?: `boolean`}): \[[RdStream](generated-doc/class.RdStream/README.md), [RdStream](generated-doc/class.RdStream/README.md)]
 
 Splits the stream to 2, so the rest of the data can be read from both of the resulting streams.
 
@@ -324,7 +324,7 @@ this will cause a deadlock situation.
 
 If the stream is locked, this method throws error. However you can do [getReaderWhenReady()](generated-doc/class.RdStream/README.md#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--omitreader-read), and call identical method on the reader.
 
-> ⚙ RdStream.[pipeTo](generated-doc/class.RdStream/README.md#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid)(dest: WritableStream\<Uint8Array>, options?: [StreamPipeOptionsLocal](generated-doc/private.interface.StreamPipeOptionsLocal/README.md)): Promise\<`void`>
+> ⚙ `override` RdStream.[pipeTo](generated-doc/class.RdStream/README.md#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid)(dest: WritableStream\<Uint8Array>, options?: [StreamPipeOptionsLocal](generated-doc/private.interface.StreamPipeOptionsLocal/README.md)): Promise\<`void`>
 
 ```ts
 type StreamPipeOptionsLocal =
@@ -348,14 +348,14 @@ Pipe data from this stream to `dest` writable stream (that can be built-in `Writ
 If the data is piped to EOF without error, the source readable stream is closed as usual ([close()](generated-doc/type.Source/README.md#-close-void--promiselikevoid) callback is called on [Source](generated-doc/type.Source/README.md)),
 and the writable stream will be closed unless `preventClose` option is set.
 
-If destination closes or enters error state, then [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) throws exception.
-But then [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) can be called again to continue piping the rest of the input stream to another destination (including the chunk that previous [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) failed to write).
+If destination closes or enters error state, then [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) throws exception.
+But then [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) can be called again to continue piping the rest of the input stream to another destination (including the chunk that previous [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) failed to write).
 
 If the stream is locked, this method throws error. However you can do [getReaderWhenReady()](generated-doc/class.RdStream/README.md#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--omitreader-read), and call identical method on the reader.
 
-> ⚙ RdStream.[pipeThrough](generated-doc/class.RdStream/README.md#-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r)\<T, W `extends` WritableStream\<Uint8Array>, R `extends` ReadableStream\<T>>(transform: \{`readonly` writable: W, `readonly` readable: R}, options?: [StreamPipeOptionsLocal](generated-doc/private.interface.StreamPipeOptionsLocal/README.md)): R
+> ⚙ `override` RdStream.[pipeThrough](generated-doc/class.RdStream/README.md#-override-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r)\<T, W `extends` WritableStream\<Uint8Array>, R `extends` ReadableStream\<T>>(transform: \{`readonly` writable: W, `readonly` readable: R}, options?: [StreamPipeOptionsLocal](generated-doc/private.interface.StreamPipeOptionsLocal/README.md)): R
 
-Uses [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) to pipe the data to transformer's writable stream, and returns transformer's readable stream.
+Uses [RdStream.pipeTo()](generated-doc/class.RdStream/README.md#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid) to pipe the data to transformer's writable stream, and returns transformer's readable stream.
 
 The transformer can be an instance of built-in `TransformStream<Uint8Array, unknown>`, [TrStream](generated-doc/class.TrStream/README.md), or any other object that implements the `Transform` interface (has `writable/readable` pair).
 
@@ -379,7 +379,7 @@ If the stream is locked, this method throws error. However you can do [getReader
 
 #### Static methods:
 
-> ⚙ `static` RdStream.[from](generated-doc/class.RdStream/README.md#-static-fromrsource-asynciterabler--iterabler--promiseliker-readablestreamr--rdstream)\<R>(source: AsyncIterable\<R> | Iterable\<R | PromiseLike\<R>>): ReadableStream\<R> \& RdStream
+> ⚙ `static` `override` RdStream.[from](generated-doc/class.RdStream/README.md#-static-override-fromrsource-asynciterabler--iterabler--promiseliker-readablestreamr--rdstream)\<R>(source: AsyncIterable\<R> | Iterable\<R | PromiseLike\<R>>): ReadableStream\<R> \& RdStream
 
 Constructs [RdStream](generated-doc/class.RdStream/README.md) from an iterable of `Uint8Array`.
 Note that `ReadableStream<Uint8Array>` is also iterable of `Uint8Array`, so it can be converted to [RdStream](generated-doc/class.RdStream/README.md),
@@ -468,20 +468,20 @@ It can return result asynchronously (`Promise` object) or synchronously (number 
 
 #### Properties:
 
-> 📄 `get` WrStreamInternal.[locked](generated-doc/class.WrStreamInternal/README.md#-get-locked-boolean)(): `boolean`
+> 📄 `override` `get` WrStreamInternal.[locked](generated-doc/class.WrStreamInternal/README.md#-override-get-locked-boolean)(): `boolean`
 
-When somebody wants to start writing to this stream, he calls [WrStream.getWriter()](generated-doc/class.WrStreamInternal/README.md#-getwriter-writablestreamdefaultwriteruint8array--writer), and after that call the stream becomes locked.
-Future calls to [WrStream.getWriter()](generated-doc/class.WrStreamInternal/README.md#-getwriter-writablestreamdefaultwriteruint8array--writer) will throw error till the writer is released ([Writer.releaseLock()](generated-doc/class.ReaderOrWriter/README.md#-releaselock-void)).
+When somebody wants to start writing to this stream, he calls [WrStream.getWriter()](generated-doc/class.WrStreamInternal/README.md#-override-getwriter-writablestreamdefaultwriteruint8array--writer), and after that call the stream becomes locked.
+Future calls to [WrStream.getWriter()](generated-doc/class.WrStreamInternal/README.md#-override-getwriter-writablestreamdefaultwriteruint8array--writer) will throw error till the writer is released ([Writer.releaseLock()](generated-doc/class.ReaderOrWriter/README.md#-releaselock-void)).
 
 Other operations that write to the stream (like [WrStream.write()](generated-doc/class.WrStreamInternal/README.md#-writechunk-uint8array--string-promisevoid)) also lock it (internally they get writer, and release it later).
 
 > 📄 `get` WrStreamInternal.[isClosed](generated-doc/class.WrStreamInternal/README.md#-get-isclosed-boolean)(): `boolean`
 
-Becomes true after [close()](generated-doc/class.WrStreamInternal/README.md#-close-promisevoid) or [abort()](generated-doc/class.WrStreamInternal/README.md#-abortreason-unknown-promisevoid) was called.
+Becomes true after [close()](generated-doc/class.WrStreamInternal/README.md#-override-close-promisevoid) or [abort()](generated-doc/class.WrStreamInternal/README.md#-override-abortreason-unknown-promisevoid) was called.
 
 #### Methods:
 
-> ⚙ WrStreamInternal.[getWriter](generated-doc/class.WrStreamInternal/README.md#-getwriter-writablestreamdefaultwriteruint8array--writer)(): WritableStreamDefaultWriter\<Uint8Array> \& Writer
+> ⚙ `override` WrStreamInternal.[getWriter](generated-doc/class.WrStreamInternal/README.md#-override-getwriter-writablestreamdefaultwriteruint8array--writer)(): WritableStreamDefaultWriter\<Uint8Array> \& Writer
 
 Returns object that allows to write data to the stream.
 The stream becomes locked till this writer is released by calling [Writer.releaseLock()](generated-doc/class.ReaderOrWriter/README.md#-releaselock-void) or [Symbol.dispose()](generated-doc/class.ReaderOrWriter/README.md#-symboldispose-void).
@@ -490,9 +490,9 @@ If the stream is already locked, this method throws error.
 
 > ⚙ WrStreamInternal.[getWriterWhenReady](generated-doc/class.WrStreamInternal/README.md#-getwriterwhenready-promisewritablestreamdefaultwriteruint8array--writer)(): Promise\<WritableStreamDefaultWriter\<Uint8Array> \& Writer>
 
-Like [WrStream.getWriter()](generated-doc/class.WrStreamInternal/README.md#-getwriter-writablestreamdefaultwriteruint8array--writer), but waits for the stream to become unlocked before returning the writer (and so locking it again).
+Like [WrStream.getWriter()](generated-doc/class.WrStreamInternal/README.md#-override-getwriter-writablestreamdefaultwriteruint8array--writer), but waits for the stream to become unlocked before returning the writer (and so locking it again).
 
-> ⚙ WrStreamInternal.[abort](generated-doc/class.WrStreamInternal/README.md#-abortreason-unknown-promisevoid)(reason?: `unknown`): Promise\<`void`>
+> ⚙ `override` WrStreamInternal.[abort](generated-doc/class.WrStreamInternal/README.md#-override-abortreason-unknown-promisevoid)(reason?: `unknown`): Promise\<`void`>
 
 Interrupt current writing operation (reject the promise that [Writer.write()](generated-doc/class.Writer/README.md#-writechunk-uint8array--string-promisevoid) returned, if any),
 and set the stream to error state.
@@ -502,7 +502,7 @@ and finalize the sink, as no more callbacks will be called.
 
 In contrast to `WritableStream.abort()`, this method works even if the stream is locked.
 
-> ⚙ WrStreamInternal.[close](generated-doc/class.WrStreamInternal/README.md#-close-promisevoid)(): Promise\<`void`>
+> ⚙ `override` WrStreamInternal.[close](generated-doc/class.WrStreamInternal/README.md#-override-close-promisevoid)(): Promise\<`void`>
 
 Calls [Sink.close()](generated-doc/type.Sink/README.md#-close-void--promiselikevoid). After that no more callbacks will be called.
 If [Sink.close()](generated-doc/type.Sink/README.md#-close-void--promiselikevoid) called again on already closed stream, nothing happens (no error is thrown).
@@ -716,11 +716,11 @@ console.log('\nRest: '+await tokens.text());
 
 #### Properties:
 
-> 📄 `readonly` TrStream.[writable](generated-doc/class.TrStream/README.md#-readonly-writable-wrstream): [WrStream](generated-doc/class.WrStream/README.md)
+> 📄 `override` `readonly` TrStream.[writable](generated-doc/class.TrStream/README.md#-override-readonly-writable-wrstream): [WrStream](generated-doc/class.WrStream/README.md)
 
 Input for the original stream.
-All the bytes written here will be transformed by this object, and will be available for reading from [TrStream.readable](generated-doc/class.TrStream/README.md#-readonly-readable-rdstream).
+All the bytes written here will be transformed by this object, and will be available for reading from [TrStream.readable](generated-doc/class.TrStream/README.md#-override-readonly-readable-rdstream).
 
-> 📄 `readonly` TrStream.[readable](generated-doc/class.TrStream/README.md#-readonly-readable-rdstream): [RdStream](generated-doc/class.RdStream/README.md)
+> 📄 `override` `readonly` TrStream.[readable](generated-doc/class.TrStream/README.md#-override-readonly-readable-rdstream): [RdStream](generated-doc/class.RdStream/README.md)
 
 Outputs the transformed stream.

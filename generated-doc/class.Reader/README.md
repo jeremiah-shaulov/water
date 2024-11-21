@@ -24,7 +24,7 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 [uint8Array](#-uint8arrayoptions-lengthlimit-number-promiseuint8array),
 [text](#-textlabel-string-options-textdecoderoptions--lengthlimit-number-promisestring),
 [\[Symbol.asyncIterator\]](#-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)
-- protected property [callbackAccessor](#-protected-callbackaccessor-somecallbackaccessor--undefined)
+- 7 inherited members from [ReaderOrWriter](../class.ReaderOrWriter/README.md)
 
 
 #### 🔧 `constructor`(callbackAccessor: SomeCallbackAccessor | `undefined`, onRelease: VoidFunction)
@@ -131,10 +131,6 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 #### ⚙ \[Symbol.asyncIterator](options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](../private.class.ReadableStreamIterator/README.md)
 
 > Allows you to iterate this stream yielding `Uint8Array` data chunks.
-
-
-
-#### 📄 `protected` callbackAccessor: SomeCallbackAccessor | `undefined`
 
 
 

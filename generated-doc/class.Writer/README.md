@@ -17,7 +17,7 @@ import {Writer} from "https://deno.land/x/water@v1.0.25/mod.ts"
 [flush](#-flush-promisevoid),
 [close](#-close-promisevoid),
 [abort](#-abortreason-unknown-promisevoid)
-- protected property [callbackAccessor](#-protected-callbackaccessor-somecallbackaccessor--undefined)
+- 7 inherited members from [ReaderOrWriter](../class.ReaderOrWriter/README.md)
 
 
 #### 🔧 `constructor`(callbackAccessor: SomeCallbackAccessor | `undefined`, onRelease: VoidFunction)
@@ -48,10 +48,6 @@ import {Writer} from "https://deno.land/x/water@v1.0.25/mod.ts"
 
 
 #### ⚙ abort(reason?: `unknown`): Promise\<`void`>
-
-
-
-#### 📄 `protected` callbackAccessor: SomeCallbackAccessor | `undefined`
 
 
 

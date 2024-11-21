@@ -9,6 +9,7 @@ import {ClosedError} from "https://deno.land/x/water@v1.0.25/mod.ts"
 ## This class has
 
 - [4 constructors](#-constructormessage-string)
+- base class
 
 
 #### 🔧 `constructor`(message?: `string`)

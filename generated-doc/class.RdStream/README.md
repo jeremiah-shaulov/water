@@ -16,31 +16,32 @@ It has the following differences:
 
 ## This class has
 
-- static method [from](#-static-fromrsource-asynciterabler--iterabler--promiseliker-readablestreamr--rdstream)
+- static method [from](#-static-override-fromrsource-asynciterabler--iterabler--promiseliker-readablestreamr--rdstream)
 - [constructor](#-constructorsource-source)
 - 3 properties:
-[locked](#-get-locked-boolean),
+[locked](#-override-get-locked-boolean),
 [isClosed](#-get-isclosed-boolean),
 [closed](#-get-closed-promiseundefined)
 - 13 methods:
-[getReader](#-getreaderoptions-mode-undefined-readablestreamdefaultreaderuint8array--omitreader-read),
-[getReader](#-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read),
+[getReader](#-override-getreaderoptions-mode-undefined-readablestreamdefaultreaderuint8array--omitreader-read),
+[getReader](#-override-getreaderoptions-mode-byob-readablestreambyobreader--omitreader-read),
 [getReaderWhenReady](#-getreaderwhenreadyoptions-mode-undefined-promisereadablestreamdefaultreaderuint8array--omitreader-read),
 [getReaderWhenReady](#-getreaderwhenreadyoptions-mode-byob-promisereadablestreambyobreader--omitreader-read),
-[cancel](#-cancelreason-unknown-promisevoid),
+[cancel](#-override-cancelreason-unknown-promisevoid),
 [unread](#-unreadchunk-uint8array-void),
-[values](#-valuesoptions-preventcancel-boolean-readablestreamiterator),
-[tee](#-teeoptions-requireparallelread-boolean-rdstream-rdstream),
-[pipeTo](#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid),
-[pipeThrough](#-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r),
+[values](#-override-valuesoptions-preventcancel-boolean-readablestreamiterator),
+[tee](#-override-teeoptions-requireparallelread-boolean-rdstream-rdstream),
+[pipeTo](#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid),
+[pipeThrough](#-override-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r),
 [uint8Array](#-uint8arrayoptions-lengthlimit-number-promiseuint8array),
 [text](#-textlabel-string-options-textdecoderoptions--lengthlimit-number-promisestring),
-[\[Symbol.asyncIterator\]](#-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)
+[\[Symbol.asyncIterator\]](#-override-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)
+- base class
 
 
 ## Static members
 
-#### ⚙ `static` from\<R>(source: AsyncIterable\<R> | Iterable\<R | PromiseLike\<R>>): ReadableStream\<R> \& RdStream
+#### ⚙ `static` `override` from\<R>(source: AsyncIterable\<R> | Iterable\<R | PromiseLike\<R>>): ReadableStream\<R> \& RdStream
 
 > Constructs `RdStream` from an iterable of `Uint8Array`.
 > Note that `ReadableStream<Uint8Array>` is also iterable of `Uint8Array`, so it can be converted to `RdStream`,
@@ -69,7 +70,7 @@ It has the following differences:
 
 
 
-#### 📄 `get` locked(): `boolean`
+#### 📄 `override` `get` locked(): `boolean`
 
 > When somebody wants to start reading this stream, he calls `rdStream.getReader()`, and after that call the stream becomes locked.
 > Future calls to `rdStream.getReader()` will throw error till the reader is released (`reader.releaseLock()`).
@@ -86,7 +87,7 @@ It has the following differences:
 
 
 
-#### ⚙ getReader(options?: \{mode?: `undefined`}): ReadableStreamDefaultReader\<Uint8Array> \& Omit\<Reader, <mark>"read"</mark>>
+#### ⚙ `override` getReader(options?: \{mode?: `undefined`}): ReadableStreamDefaultReader\<Uint8Array> \& Omit\<Reader, <mark>"read"</mark>>
 
 > Returns object that allows to read data from the stream.
 > The stream becomes locked till this reader is released by calling `reader.releaseLock()` or `reader[Symbol.dispose]()`.
@@ -95,7 +96,7 @@ It has the following differences:
 
 
 
-#### ⚙ getReader(options: \{mode: <mark>"byob"</mark>}): ReadableStreamBYOBReader \& Omit\<Reader, <mark>"read"</mark>>
+#### ⚙ `override` getReader(options: \{mode: <mark>"byob"</mark>}): ReadableStreamBYOBReader \& Omit\<Reader, <mark>"read"</mark>>
 
 
 
@@ -109,7 +110,7 @@ It has the following differences:
 
 
 
-#### ⚙ cancel(reason?: `unknown`): Promise\<`void`>
+#### ⚙ `override` cancel(reason?: `unknown`): Promise\<`void`>
 
 > Interrupt current reading operation (reject the promise that `reader.read()` returned, if any),
 > and tell to discard further data in the stream.
@@ -128,7 +129,7 @@ It has the following differences:
 
 
 
-#### ⚙ values(options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](../private.class.ReadableStreamIterator/README.md)
+#### ⚙ `override` values(options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](../private.class.ReadableStreamIterator/README.md)
 
 > This function is the same as `this[Symbol.asyncIterator]`.
 > It allows to iterate this stream yielding `Uint8Array` data chunks.
@@ -155,7 +156,7 @@ It has the following differences:
 
 
 
-#### ⚙ tee(options?: \{requireParallelRead?: `boolean`}): \[[RdStream](../class.RdStream/README.md), [RdStream](../class.RdStream/README.md)]
+#### ⚙ `override` tee(options?: \{requireParallelRead?: `boolean`}): \[[RdStream](../class.RdStream/README.md), [RdStream](../class.RdStream/README.md)]
 
 > Splits the stream to 2, so the rest of the data can be read from both of the resulting streams.
 > 
@@ -171,7 +172,7 @@ It has the following differences:
 
 
 
-#### ⚙ pipeTo(dest: WritableStream\<Uint8Array>, options?: [StreamPipeOptionsLocal](../private.interface.StreamPipeOptionsLocal/README.md)): Promise\<`void`>
+#### ⚙ `override` pipeTo(dest: WritableStream\<Uint8Array>, options?: [StreamPipeOptionsLocal](../private.interface.StreamPipeOptionsLocal/README.md)): Promise\<`void`>
 
 > Pipe data from this stream to `dest` writable stream (that can be built-in `WritableStream<Uint8Array>` or `WrStream`).
 > 
@@ -185,7 +186,7 @@ It has the following differences:
 
 
 
-#### ⚙ pipeThrough\<T, W `extends` WritableStream\<Uint8Array>, R `extends` ReadableStream\<T>>(transform: \{`readonly` writable: W, `readonly` readable: R}, options?: [StreamPipeOptionsLocal](../private.interface.StreamPipeOptionsLocal/README.md)): R
+#### ⚙ `override` pipeThrough\<T, W `extends` WritableStream\<Uint8Array>, R `extends` ReadableStream\<T>>(transform: \{`readonly` writable: W, `readonly` readable: R}, options?: [StreamPipeOptionsLocal](../private.interface.StreamPipeOptionsLocal/README.md)): R
 
 > Uses `rdStream.pipeTo()` to pipe the data to transformer's writable stream, and returns transformer's readable stream.
 > 
@@ -215,7 +216,7 @@ It has the following differences:
 
 
 
-#### ⚙ \[Symbol.asyncIterator](options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](../private.class.ReadableStreamIterator/README.md)
+#### ⚙ `override` \[Symbol.asyncIterator](options?: \{preventCancel?: `boolean`}): [ReadableStreamIterator](../private.class.ReadableStreamIterator/README.md)
 
 > Allows to iterate this stream yielding `Uint8Array` data chunks.
 > 

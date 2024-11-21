@@ -6,24 +6,25 @@
 
 - [constructor](#-constructorsink-sinkinternal)
 - 3 properties:
-[locked](#-get-locked-boolean),
+[locked](#-override-get-locked-boolean),
 [isClosed](#-get-isclosed-boolean),
 [closed](#-get-closed-promiseundefined)
 - 6 methods:
-[getWriter](#-getwriter-writablestreamdefaultwriteruint8array--writer),
+[getWriter](#-override-getwriter-writablestreamdefaultwriteruint8array--writer),
 [getWriterWhenReady](#-getwriterwhenready-promisewritablestreamdefaultwriteruint8array--writer),
-[abort](#-abortreason-unknown-promisevoid),
-[close](#-close-promisevoid),
+[abort](#-override-abortreason-unknown-promisevoid),
+[close](#-override-close-promisevoid),
 [write](#-writechunk-uint8array--string-promisevoid),
 [flush](#-flush-promisevoid)
 - [deprecated symbol](#-deprecated-writewhenreadychunk-uint8array--string-promisevoid)
+- base class
 
 
 #### 🔧 `constructor`(sink: [SinkInternal](../private.type.SinkInternal/README.md))
 
 
 
-#### 📄 `get` locked(): `boolean`
+#### 📄 `override` `get` locked(): `boolean`
 
 > When somebody wants to start writing to this stream, he calls `wrStream.getWriter()`, and after that call the stream becomes locked.
 > Future calls to `wrStream.getWriter()` will throw error till the writer is released (`writer.releaseLock()`).
@@ -40,7 +41,7 @@
 
 
 
-#### ⚙ getWriter(): WritableStreamDefaultWriter\<Uint8Array> \& Writer
+#### ⚙ `override` getWriter(): WritableStreamDefaultWriter\<Uint8Array> \& Writer
 
 > Returns object that allows to write data to the stream.
 > The stream becomes locked till this writer is released by calling `writer.releaseLock()` or `writer[Symbol.dispose]()`.
@@ -55,7 +56,7 @@
 
 
 
-#### ⚙ abort(reason?: `unknown`): Promise\<`void`>
+#### ⚙ `override` abort(reason?: `unknown`): Promise\<`void`>
 
 > Interrupt current writing operation (reject the promise that `writer.write()` returned, if any),
 > and set the stream to error state.
@@ -67,7 +68,7 @@
 
 
 
-#### ⚙ close(): Promise\<`void`>
+#### ⚙ `override` close(): Promise\<`void`>
 
 > Calls `sink.close()`. After that no more callbacks will be called.
 > If `close()` called again on already closed stream, nothing happens (no error is thrown).

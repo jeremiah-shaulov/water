@@ -693,6 +693,7 @@
 	Outputs the transformed stream.
 
 	@module
+	@summary water - Alternative to ReadableStream, WritableStream and TransformStream.
  **/
 
 export {RdStream, type Source, TooBigError, Reader} from './private/rd_stream.ts';

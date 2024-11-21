@@ -1,4 +1,4 @@
-# `class` ReadableStreamIterator `implements` \<AsyncIterableIterator\<Uint8Array>>
+# `class` ReadableStreamIterator `implements` AsyncIterableIterator\<Uint8Array>
 
 [Documentation Index](../README.md)
 

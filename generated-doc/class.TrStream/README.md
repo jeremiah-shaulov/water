@@ -10,22 +10,23 @@ import {TrStream} from "https://deno.land/x/water@v1.0.25/mod.ts"
 
 - [constructor](#-constructortransformer-transformer)
 - 2 properties:
-[writable](#-readonly-writable-wrstream),
-[readable](#-readonly-readable-rdstream)
+[writable](#-override-readonly-writable-wrstream),
+[readable](#-override-readonly-readable-rdstream)
+- base class
 
 
 #### 🔧 `constructor`(transformer: [Transformer](../type.Transformer/README.md))
 
 
 
-#### 📄 `readonly` writable: [WrStream](../class.WrStream/README.md)
+#### 📄 `override` `readonly` writable: [WrStream](../class.WrStream/README.md)
 
 > Input for the original stream.
 > All the bytes written here will be transformed by this object, and will be available for reading from `TrStream.readable`.
 
 
 
-#### 📄 `readonly` readable: [RdStream](../class.RdStream/README.md)
+#### 📄 `override` `readonly` readable: [RdStream](../class.RdStream/README.md)
 
 > Outputs the transformed stream.
 
