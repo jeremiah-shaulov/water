@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {TrStream} from "https://deno.land/x/water@v1.0.25/mod.ts"
+import {TrStream} from "https://deno.land/x/water@v1.0.26/mod.ts"
 ```
 
 ## This class has
