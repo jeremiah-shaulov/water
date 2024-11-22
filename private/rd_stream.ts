@@ -779,6 +779,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 				{	await this.cancel(e);
 				}
 			}
+			throw e;
 		}
 		finally
 		{	writer.releaseLock();

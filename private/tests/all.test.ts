@@ -1,7 +1,7 @@
 // To run:
 // rm -rf .vscode/coverage/profile && deno test --fail-fast --allow-all --coverage=.vscode/coverage/profile private/tests/all.test.ts && deno coverage --unstable .vscode/coverage/profile --lcov > .vscode/coverage/lcov.info
 
-import {RdStream, TrStream, WrStream} from '../../mod.ts';
+import {RdStream, Source, TrStream, WrStream} from '../../mod.ts';
 import {assertEquals} from 'jsr:@std/assert@1.0.7/equals';
 
 // deno-lint-ignore no-explicit-any
@@ -166,6 +166,56 @@ class CopyOneToken extends TrStream
 		);
 	}
 }
+
+Deno.test
+(	'Pipe error',
+	async () =>
+	{	const r1 = new ReadableStream
+		(	{	start(c)
+				{	c.enqueue(new Uint8Array([65, 66]));
+					c.error(new Error('Hello error'));
+				}
+			}
+		);
+
+		const s2: Source & {f: boolean} =
+		{	f: false,
+
+			read(b)
+			{	if (!this.f)
+				{	this.f = true;
+					b[0] = 65;
+					b[1] = 66;
+					return 2;
+				}
+				else
+				{	throw new Error('Hello error');
+				}
+			}
+		};
+		const r2 = new RdStream(s2);
+
+		let error1: Error|undefined;
+		try
+		{	await r1.pipeTo(Deno.stdout.writable, {preventClose: true, preventCancel: true, preventAbort: true});
+		}
+		catch (e)
+		{	error1 = e instanceof Error ? e : new Error(e+'');
+		}
+
+
+		let error2: Error|undefined;
+		try
+		{	await r2.pipeTo(Deno.stdout.writable, {preventClose: true, preventCancel: true, preventAbort: true});
+		}
+		catch (e)
+		{	error2 = e instanceof Error ? e : new Error(e+'');
+		}
+
+		assertEquals(error1?.message.includes('Hello error'), true);
+		assertEquals(error2?.message.includes('Hello error'), true);
+	}
+);
 
 Deno.test
 (	'isClosed',
