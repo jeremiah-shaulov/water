@@ -7,10 +7,10 @@
 - [constructor](#-constructorbuffer-uint8array-autoallocatemin-number)
 - 5 methods:
 [pipeTo](#-pipetowriterclosedpromise-promisevoid-callbacksforread-callbacks-callbackwriteinverting-chunk-uint8array-canreturnzero-boolean--number--promiselikenumber-promiseboolean),
-[read](#-readview-uint8array-uint8array),
+[read](#-readview-uint8array-uint8arrayarraybufferlike),
 [unread](#-unreadchunk-uint8array-void),
-[unwrap](#-unwrap-uint8array),
-[dispose](#-dispose-uint8array)
+[unwrap](#-unwrap-uint8arrayarraybufferlike),
+[dispose](#-dispose-uint8arrayarraybufferlike)
 
 
 #### 🔧 `constructor`(buffer: Uint8Array, autoAllocateMin: `number`)
@@ -21,7 +21,7 @@
 
 
 
-#### ⚙ read(view: Uint8Array): Uint8Array
+#### ⚙ read(view: Uint8Array): Uint8Array\<ArrayBufferLike>
 
 
 
@@ -29,11 +29,11 @@
 
 
 
-#### ⚙ unwrap(): Uint8Array
+#### ⚙ unwrap(): Uint8Array\<ArrayBufferLike>
 
 
 
-#### ⚙ dispose(): Uint8Array
+#### ⚙ dispose(): Uint8Array\<ArrayBufferLike>
 
 
 

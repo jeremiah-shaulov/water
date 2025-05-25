@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Reader} from "https://deno.land/x/water@v1.0.26/mod.ts"
+import {Reader} from "https://deno.land/x/water@v1.0.27/mod.ts"
 ```
 
 This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.
@@ -21,7 +21,7 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 [tee](#-teeoptions-requireparallelread-boolean-rdstream-rdstream),
 [pipeTo](#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid),
 [pipeThrough](#-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r),
-[uint8Array](#-uint8arrayoptions-lengthlimit-number-promiseuint8array),
+[uint8Array](#-uint8arrayoptions-lengthlimit-number-promiseuint8arrayarraybufferlike),
 [text](#-textlabel-string-options-textdecoderoptions--lengthlimit-number-promisestring),
 [\[Symbol.asyncIterator\]](#-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)
 - 7 inherited members from [ReaderOrWriter](../class.ReaderOrWriter/README.md)
@@ -114,7 +114,7 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 
 
 
-#### ⚙ uint8Array(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array>
+#### ⚙ uint8Array(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array\<ArrayBufferLike>>
 
 > Reads the whole stream to memory.
 > If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number,
