@@ -806,7 +806,7 @@ Deno.test
 			}
 			catch (e)
 			{	assertEquals(e instanceof TypeError, true);
-				assertEquals(e instanceof TypeError ? e.message : '', 'ReadableStream is locked.');
+				assertEquals(e instanceof TypeError ? e.message : '', 'ReadableStream is locked');
 			}
 			r.releaseLock();
 

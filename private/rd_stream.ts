@@ -358,7 +358,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 	override getReader(options: {mode: 'byob'}): ReadableStreamBYOBReader & Omit<Reader, 'read'>;
 	override getReader(_options?: {mode?: 'byob'}): (ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Omit<Reader, 'read'>
 	{	if (this.#locked)
-		{	throw new TypeError('ReadableStream is locked.');
+		{	throw new TypeError('ReadableStream is locked');
 		}
 		this.#locked = true;
 		return new Reader
