@@ -34,7 +34,7 @@ export type Transformer =
 	flush?(writer: Writer): void | PromiseLike<void>;
 };
 
-const EMPTY_CHUNK = new Uint8Array;
+const EMPTY_CHUNK: Uint8Array<ArrayBufferLike> = new Uint8Array;
 
 enum UseCanReturnZero
 {	YES, NO, UNKNOWN
