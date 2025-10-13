@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {RdStream} from "https://deno.land/x/water@v1.0.27/mod.ts"
+import {RdStream} from "https://deno.land/x/water@v1.0.28/mod.ts"
 ```
 
 This class extends `ReadableStream<Uint8Array>`, and can be used as it's substitutor.
@@ -33,9 +33,10 @@ It has the following differences:
 [tee](#-override-teeoptions-requireparallelread-boolean-rdstream-rdstream),
 [pipeTo](#-override-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid),
 [pipeThrough](#-override-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r),
-[uint8Array](#-uint8arrayoptions-lengthlimit-number-promiseuint8arrayarraybufferlike),
+[bytes](#-bytesoptions-lengthlimit-number-promiseuint8arrayarraybufferlike),
 [text](#-textlabel-string-options-textdecoderoptions--lengthlimit-number-promisestring),
 [\[Symbol.asyncIterator\]](#-override-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)
+- [deprecated symbol](#-deprecated-uint8arrayoptions-lengthlimit-number-promiseuint8arrayarraybufferlike)
 - base class
 
 
@@ -196,7 +197,7 @@ It has the following differences:
 
 
 
-#### ⚙ uint8Array(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array\<ArrayBufferLike>>
+#### ⚙ bytes(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array\<ArrayBufferLike>>
 
 > Reads the whole stream to memory.
 > If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number,
@@ -241,4 +242,16 @@ It has the following differences:
 > If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 
 
+
+<div style="opacity:0.6">
+
+#### ⚙ `deprecated` uint8Array(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array\<ArrayBufferLike>>
+
+> `deprecated`
+> 
+> Use `bytes()` instead.
+
+
+
+</div>
 
