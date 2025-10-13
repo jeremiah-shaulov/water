@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Reader} from "https://deno.land/x/water@v1.0.28/mod.ts"
+import {Reader} from "https://deno.land/x/water@v1.0.29/mod.ts"
 ```
 
 This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.

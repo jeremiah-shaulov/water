@@ -10,7 +10,7 @@
 [autoAllocateChunkSize](#-autoallocatechunksize-number),
 [autoAllocateMin](#-autoallocatemin-number)
 - 3 methods:
-[read](#-readview-uint8array-min-number-promiseuint8arrayarraybufferlike),
+[read](#-readview-uint8array-min-number0-promiseuint8arrayarraybufferlike),
 [getOrCreatePiper](#-getorcreatepiper-piper),
 [dropPiper](#-droppipercurpiper-piper-void)
 - 9 inherited members from [CallbackAccessor](../class.CallbackAccessor/README.md)
@@ -32,7 +32,7 @@
 
 
 
-#### ⚙ read(view?: Uint8Array, min?: `number`): Promise\<Uint8Array\<ArrayBufferLike>>
+#### ⚙ read(view?: Uint8Array, min: `number`=0): Promise\<Uint8Array\<ArrayBufferLike>>
 
 
 

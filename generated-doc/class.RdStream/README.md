@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {RdStream} from "https://deno.land/x/water@v1.0.28/mod.ts"
+import {RdStream} from "https://deno.land/x/water@v1.0.29/mod.ts"
 ```
 
 This class extends `ReadableStream<Uint8Array>`, and can be used as it's substitutor.
