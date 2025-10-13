@@ -3,6 +3,9 @@
 
 import {RdStream, Source, TrStream, WrStream} from '../../mod.ts';
 import {assertEquals} from 'jsr:@std/assert@1.0.7/equals';
+import {assert} from 'jsr:@std/assert@1.0.7/assert';
+
+const DENO_READER_HAS_BUG = true;
 
 // deno-lint-ignore no-explicit-any
 type Any = any;
@@ -1415,7 +1418,7 @@ Deno.test
 	async () =>
 	{	const GEN_CHUNK_SIZE = 2733;
 		const CONSUME_CHUNK_SIZE = 64*1024;
-		const DATA = new TextEncoder().encode('Hello'.repeat(CONSUME_CHUNK_SIZE));
+		const DATA = textEncoder.encode('Hello'.repeat(CONSUME_CHUNK_SIZE));
 		for (let a=0; a<2; a++) // ReadableStream or RdStream
 		{	await using sender = createTcpServer
 			(	async conn =>
@@ -1597,10 +1600,10 @@ Deno.test
 		{	const sink = new StringSink;
 			const tokens = new StringStreamer('One Two Three Four');
 			if (a >= 1)
-			{	tokens.unread(new TextEncoder().encode('Zero '));
+			{	tokens.unread(textEncoder.encode('Zero '));
 			}
 			if (a >= 2)
-			{	tokens.unread(new TextEncoder().encode('-One '));
+			{	tokens.unread(textEncoder.encode('-One '));
 
 				await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
 				assertEquals(sink.value, '-One');
@@ -1630,10 +1633,10 @@ Deno.test
 		{	for (let b=0; b<2; b++)
 			{	const tokens = new StringStreamer('One Two Three Four');
 				if (a >= 1)
-				{	tokens.unread(new TextEncoder().encode('Zero '));
+				{	tokens.unread(textEncoder.encode('Zero '));
 				}
 				if (a >= 2)
-				{	tokens.unread(new TextEncoder().encode('-One '));
+				{	tokens.unread(textEncoder.encode('-One '));
 				}
 				let text = '';
 				if (b == 0)
@@ -1666,23 +1669,84 @@ Deno.test
 (	'Read through Response object',
 	async () =>
 	{	for (let a=0; a<2; a++) // ReadableStream or RdStream
+		{	for (const limit of [1, 10, 100, 1000, Number.MAX_SAFE_INTEGER])
+			{	let lor = textEncoder.encode(LOR);
+
+				// deno-lint-ignore no-inner-declarations
+				function read(view: Uint8Array)
+				{	if (lor.byteLength == 0)
+					{	return null;
+					}
+					const nRead = Math.min(lor.byteLength, view.byteLength, limit);
+					view.set(lor.subarray(0, nRead));
+					lor = lor.subarray(nRead);
+					return nRead;
+				}
+
+				const rs = a==0 ? new ReadableStream({...readToPull(read)}) : new RdStream({read});
+				const resp = new Response(rs);
+				const text = await resp.text();
+				assertEquals(text, LOR);
+			}
+		}
+	}
+);
+
+Deno.test
+(	'Read min',
+	async () =>
+	{	for (let a=0; a<2; a++) // ReadableStream or RdStream
 		{	let lor = textEncoder.encode(LOR);
+			let limit = Number.MAX_SAFE_INTEGER;
+			let nCalled = 0;
 
 			// deno-lint-ignore no-inner-declarations
 			function read(view: Uint8Array)
-			{	if (lor.byteLength == 0)
+			{	nCalled++;
+				if (lor.byteLength == 0)
 				{	return null;
 				}
-				const nRead = Math.min(lor.byteLength, view.byteLength);
+				const nRead = Math.min(lor.byteLength, view.byteLength, limit);
 				view.set(lor.subarray(0, nRead));
 				lor = lor.subarray(nRead);
 				return nRead;
 			}
 
 			const rs = a==0 ? new ReadableStream({...readToPull(read)}) : new RdStream({read});
-			const resp = new Response(rs);
-			const text = await resp.text();
-			assertEquals(text, LOR);
+			const r = rs.getReader({mode: 'byob'});
+
+			try
+			{	let b = new Uint8Array(lor.byteLength);
+
+				// Read first 30 bytes
+				limit = 10;
+				const {value, done} = await r.read(b, {min: 25});
+				assertEquals(done, false);
+				assert(value);
+				b = new Uint8Array(value.buffer, 0, value.buffer.byteLength);
+				assertEquals(value.byteLength, 30);
+				assertEquals(textDecoder.decode(value), LOR.slice(0, 30));
+				assertEquals(nCalled, 3);
+
+				// Read the rest
+				limit = Number.MAX_SAFE_INTEGER;
+				const {value: value2, done: done2} = await r.read(b);
+				assertEquals(done2, false);
+				assert(value2);
+				b = new Uint8Array(value2.buffer, 0, value2.buffer.byteLength);
+				assertEquals(textDecoder.decode(value2), LOR.slice(30));
+				assertEquals(nCalled, 4);
+
+				// Read at EOF
+				if (a==1 || !DENO_READER_HAS_BUG)
+				{	const {done: done3} = await r.read(b);
+					assertEquals(done3, true);
+					assertEquals(nCalled, 5);
+				}
+			}
+			finally
+			{	r.releaseLock();
+			}
 		}
 	}
 );
@@ -1739,7 +1803,7 @@ Deno.test
 	{	const log = new Array<string>;
 		const ws = new WrStream
 		(	{	write(chunk)
-				{	log.push(`write(${new TextDecoder().decode(chunk)})`);
+				{	log.push(`write(${textDecoder.decode(chunk)})`);
 					return chunk.byteLength;
 				},
 				flush()
