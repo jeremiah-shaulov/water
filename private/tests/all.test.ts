@@ -16,33 +16,76 @@ const LOR = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus di
 
 function readToPull(read: (view: Uint8Array) => number | null | Promise<number|null>, limitItems=Number.MAX_SAFE_INTEGER): UnderlyingByteSource
 {	let i = 0;
+	let cancelled = false;
+	let pendingPromise: Promise<void>|undefined;
+
 	return {
 		type: 'bytes',
 
 		pull(controller: ReadableByteStreamController)
-		{	const view = controller.byobRequest?.view;
+		{	if (cancelled)
+			{	controller.close();
+				return;
+			}
+
+			const view = controller.byobRequest?.view;
 			const readTo = !view ? new Uint8Array(8*1024) : new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
 			const resultOrPromise = read(readTo);
+
 			function next(n: number|null)
-			{	if (n == null)
+			{	pendingPromise = undefined;
+				if (cancelled)
+				{	controller.close();
+					return;
+				}
+				if (n == null)
 				{	controller.close();
 				}
 				else if (view)
-				{	controller.byobRequest.respond(n);
+				{	try
+					{	controller.byobRequest.respond(n);
+					}
+					catch
+					{	// Handle case where controller is already closed
+					}
 				}
 				else
-				{	controller.enqueue(readTo.subarray(0, n));
+				{	try
+					{	controller.enqueue(readTo.subarray(0, n));
+					}
+					catch
+					{	// Handle case where controller is already closed
+					}
 				}
 				if (++i == limitItems)
 				{	controller.close();
 				}
 			}
+
 			if (typeof(resultOrPromise)=='number' || resultOrPromise==null)
 			{	next(resultOrPromise);
 			}
 			else
-			{	return resultOrPromise.then(next);
+			{	pendingPromise = resultOrPromise.then(next).catch
+				(	err =>
+					{	pendingPromise = undefined;
+						if (!cancelled)
+						{	try
+							{	controller.error(err);
+							}
+							catch
+							{	// Handle case where controller is already closed
+							}
+						}
+					}
+				);
+				return pendingPromise;
 			}
+		},
+
+		cancel()
+		{	cancelled = true;
+			// Don't return a promise here to avoid additional async tracking
 		}
 	};
 }
@@ -86,7 +129,7 @@ function createTcpServer(handler: (conn: Deno.Conn) => Promise<void>, maxConns=1
 			(	() =>
 				{	const i = promises.indexOf(promise);
 					if (i != -1)
-					{	promises.splice(i, i);
+					{	promises.splice(i, 1);
 					}
 				}
 			);
@@ -96,14 +139,16 @@ function createTcpServer(handler: (conn: Deno.Conn) => Promise<void>, maxConns=1
 		}
 		await Promise.all(promises);
 	}
-	accept();
+	const acceptPromise = accept().catch(e => console.log(e));
 	// Return the server
 	return {
 		port,
 
-		[Symbol.dispose]()
+		async [Symbol.asyncDispose]()
 		{	listener.close();
-		}
+			// Wait for the accept loop to finish
+			await acceptPromise;
+		},
 	};
 }
 
@@ -1141,7 +1186,7 @@ Deno.test
 		{	const SEND_N_BYTES = 10_000_000;
 			const CHUNK_SIZE = 1000;
 			const N_IN_PARALLEL = 10;
-			using sender = createTcpServer
+			await using sender = createTcpServer
 			(	async conn =>
 				{	const writer = conn.writable.getWriter();
 					const buffer = new Uint8Array(CHUNK_SIZE);
@@ -1203,7 +1248,7 @@ Deno.test
 		{	const SEND_N_BYTES = 10_000_000;
 			const CHUNK_SIZE = 1000;
 			const N_IN_PARALLEL = 10;
-			using sender = createTcpServer
+			await using sender = createTcpServer
 			(	async conn =>
 				{	const writer = conn.writable.getWriter();
 					const buffer = new Uint8Array(CHUNK_SIZE);
@@ -1310,7 +1355,7 @@ Deno.test
 	{	const PART_SIZE = 100_000;
 		const N_PARTS = 4;
 		const CHUNK_SIZE = 1000;
-		using sender = createTcpServer
+		await using sender = createTcpServer
 		(	async conn =>
 			{	const writer = conn.writable.getWriter();
 				const buffer = new Uint8Array(CHUNK_SIZE);
@@ -1372,7 +1417,7 @@ Deno.test
 		const CONSUME_CHUNK_SIZE = 64*1024;
 		const DATA = new TextEncoder().encode('Hello'.repeat(CONSUME_CHUNK_SIZE));
 		for (let a=0; a<2; a++) // ReadableStream or RdStream
-		{	using sender = createTcpServer
+		{	await using sender = createTcpServer
 			(	async conn =>
 				{	const ws = new WrStream(conn);
 					let data = DATA;
@@ -1425,7 +1470,7 @@ Deno.test
 	{	for (let a=0; a<2; a++) // autoAllocateChunkSize: default, explicit
 		{	for (const SEND_N_BYTES of [0, 10, 10_000_000])
 			{	const CHUNK_SIZE = 1000;
-				using sender = createTcpServer
+				await using sender = createTcpServer
 				(	async conn =>
 					{	const writer = conn.writable.getWriter();
 						const buffer = new Uint8Array(CHUNK_SIZE);
