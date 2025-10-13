@@ -94,7 +94,7 @@
 	- {@link RdStream.cancel()} and {@link WrStream.abort()} work also on locked streams.
 	- [getReader()]{@link RdStream.getReader} and [getWriter()]{@link WrStream.getWriter} have [getReaderWhenReady()]{@link RdStream.getReaderWhenReady} and [getWriterWhenReady()]{@link WrStream.getWriterWhenReady} counterparts, that wait for reader/writer to be unlocked.
 	- {@link RdStream.values()}, {@link RdStream.tee()}, {@link RdStream.pipeTo()} and {@link RdStream.pipeThrough()} are present in both {@link RdStream} and {@link Reader}.
-	- Also {@link RdStream} and {@link Reader} have additional methods: [uint8Array()]{@link RdStream.uint8Array}, [text()]{@link RdStream.text} and [unread()]{@link RdStream.unread}.
+	- Also {@link RdStream} and {@link Reader} have additional methods: [bytes()]{@link RdStream.bytes}, [text()]{@link RdStream.text} and [unread()]{@link RdStream.unread}.
 	- {@link RdStream.pipeTo()} and {@link RdStream.pipeThrough()} are restartable ({@link Transformer.transform()} can close it's writer, and then the rest of the input stream can be piped to elsewhere).
 	- {@link Reader} and {@link Writer} implement `Symbol.dispose` that releases the lock.
 	- {@link WrStream} has [flush]{@link WrStream.flush} feature.
@@ -342,7 +342,7 @@
 
 	If the stream is locked, this method throws error. However you can do [getReaderWhenReady()]{@link RdStream.getReaderWhenReady}, and call identical method on the reader.
 
-	{@linkcode RdStream.uint8Array}
+	{@linkcode RdStream.bytes}
 
 	Reads the whole stream to memory.
 

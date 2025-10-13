@@ -519,16 +519,22 @@ export class RdStream extends ReadableStream<Uint8Array>
 		return readable;
 	}
 
+	/**	@deprecated Use `bytes()` instead.
+	 **/
+	uint8Array(options?: {lengthLimit?: number})
+	{	return this.bytes(options);
+	}
+
 	/**	Reads the whole stream to memory.
 		If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number,
 		a `TooBigError` exception is thrown.
 
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
-	async uint8Array(options?: {lengthLimit?: number})
+	async bytes(options?: {lengthLimit?: number})
 	{	const reader = this.getReader();
 		try
-		{	return await reader.uint8Array(options);
+		{	return await reader.bytes(options);
 		}
 		finally
 		{	reader.releaseLock();
@@ -542,7 +548,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 		If the stream is locked, this method throws error. However you can do `getReaderWhenReady()`, and call identical method on the reader.
 	 **/
 	async text(label?: string, options?: TextDecoderOptions & {lengthLimit?: number})
-	{	return new TextDecoder(label, options).decode(await this.uint8Array(options));
+	{	return new TextDecoder(label, options).decode(await this.bytes(options));
 	}
 }
 
@@ -805,11 +811,17 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		return readable;
 	}
 
+	/**	@deprecated Use `bytes()` instead.
+	 **/
+	uint8Array(options?: {lengthLimit?: number})
+	{	return this.bytes(options);
+	}
+
 	/**	Reads the whole stream to memory.
 		If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number,
 		a `TooBigError` exception is thrown.
 	 **/
-	async uint8Array(options?: {lengthLimit?: number})
+	async bytes(options?: {lengthLimit?: number})
 	{	const lengthLimit = options?.lengthLimit || Number.MAX_SAFE_INTEGER;
 		const callbackAccessor = this.getCallbackAccessor();
 		const result = await callbackAccessor.useCallbacks
@@ -879,7 +891,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	/**	Reads the whole stream to memory, and converts it to string, just as `TextDecoder.decode()` does.
 	 **/
 	async text(label?: string, options?: TextDecoderOptions & {lengthLimit?: number})
-	{	return new TextDecoder(label, options).decode(await this.uint8Array(options));
+	{	return new TextDecoder(label, options).decode(await this.bytes(options));
 	}
 
 	/**	Declares that this object is capable of no-transfer read. This allows the user to distinguish

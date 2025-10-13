@@ -1347,7 +1347,7 @@ Deno.test
 						}
 					}
 				)
-			).uint8Array();
+			).bytes();
 			if (part.byteLength == 0)
 			{	break;
 			}
@@ -1409,7 +1409,7 @@ Deno.test
 						}
 					)
 				)
-			).uint8Array();
+			).bytes();
 			assertEquals(transformed, DATA);
 			if (a == 1)
 			{	assertEquals(observedSizes[0], CONSUME_CHUNK_SIZE);
@@ -1420,7 +1420,7 @@ Deno.test
 );
 
 Deno.test
-(	'Reader: uint8Array()',
+(	'Reader: bytes()',
 	async () =>
 	{	for (let a=0; a<2; a++) // autoAllocateChunkSize: default, explicit
 		{	for (const SEND_N_BYTES of [0, 10, 10_000_000])
@@ -1441,7 +1441,7 @@ Deno.test
 					}
 				);
 				const fh = await Deno.connect({port: sender.port});
-				const value = await new RdStream(a==0 ? fh : {read: v => fh.read(v), close: () => fh.close(), autoAllocateChunkSize: 100}).uint8Array();
+				const value = await new RdStream(a==0 ? fh : {read: v => fh.read(v), close: () => fh.close(), autoAllocateChunkSize: 100}).bytes();
 				for (let i=0; i<value.byteLength; i++)
 				{	if (value[i] != (i & 0xFF))
 					{	throw new Error(`Invalid value at ${i}`);
