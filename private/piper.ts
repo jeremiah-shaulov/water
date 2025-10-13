@@ -252,10 +252,9 @@ export class Piper
 	}
 
 	read(view: Uint8Array)
-	{	const {readPos, writePos, readPos2} = this;
+	{	const {readPos, writePos, readPos2, buffer} = this;
 		if (writePos < readPos)
-		{	const {buffer} = this;
-			let nRead = Math.min(view.byteLength, readPos-writePos);
+		{	let nRead = Math.min(view.byteLength, readPos-writePos);
 			const nextWritePos = writePos + nRead;
 			view.set(buffer.subarray(writePos, nextWritePos));
 			if (nextWritePos == readPos)
