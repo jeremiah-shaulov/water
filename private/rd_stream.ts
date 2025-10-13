@@ -565,14 +565,10 @@ class ReadCallbackAccessor extends CallbackAccessor
 	{	super(callbacks, false);
 	}
 
-	read(view?: Uint8Array, min?: number)
+	read(view?: Uint8Array, min=0)
 	{	if (view?.byteLength === 0)
 		{	throw new Error('Empty BYOB buffer passed to read()');
 		}
-		if (min!=undefined && (!view || min<=0 || min>view.byteLength))
-		{	throw new Error('Invalid min passed to read()');
-		}
-		const useMin = min ?? 0;
 		return this.useCallbacks
 		(	async callbacks =>
 			{	let nFilled = 0;
@@ -596,7 +592,7 @@ class ReadCallbackAccessor extends CallbackAccessor
 						if (!data)
 						{	this.dropPiper(curPiper);
 						}
-						else if (data.byteLength >= useMin)
+						else if (data.byteLength >= min)
 						{	return data;
 						}
 						else
@@ -619,14 +615,11 @@ class ReadCallbackAccessor extends CallbackAccessor
 					}
 					if (!nRead)
 					{	await this.close();
-						if (nFilled >= useMin)
-						{	return;
-						}
-						throw new Error('EOF');
+						return nFilled ? view.subarray(0, nFilled) : undefined; // if returned undefined or less than `min`, it means EOF
 					}
 					else
 					{	nFilled += nRead;
-						if (nFilled >= useMin)
+						if (nFilled >= min)
 						{	return view.subarray(0, nFilled);
 						}
 					}
@@ -675,10 +668,14 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		{	if (!(view instanceof Uint8Array))
 			{	throw new Error('Only Uint8Array is supported'); // i always return `Uint8Array`, and it must be also `V`
 			}
-			const view2 = await this.getCallbackAccessor().read(view, options?.min);
+			const min = options?.min;
+			if (min!=undefined && (min<=0 || min>view.byteLength))
+			{	throw new Error('Invalid min passed to read()');
+			}
+			const view2 = await this.getCallbackAccessor().read(view, min);
 			return {
 				value: (!view2 ? view.subarray(0, 0) : view2) as Any,
-				done: !view2,
+				done: !view2 || min!=undefined && view2.byteLength<min,
 			};
 		}
 	}

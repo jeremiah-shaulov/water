@@ -1,11 +1,18 @@
 // To run:
-// rm -rf .vscode/coverage/profile && deno test --fail-fast --allow-all --coverage=.vscode/coverage/profile private/tests/all.test.ts && deno coverage --unstable .vscode/coverage/profile --lcov > .vscode/coverage/lcov.info
+// rm -rf .vscode/coverage/profile && deno test --fail-fast --trace-leaks --allow-all --coverage=.vscode/coverage/profile private/tests/all.test.ts && deno coverage --unstable .vscode/coverage/profile --lcov > .vscode/coverage/lcov.info
 
 import {RdStream, Source, TrStream, WrStream} from '../../mod.ts';
-import {assertEquals} from 'jsr:@std/assert@1.0.7/equals';
-import {assert} from 'jsr:@std/assert@1.0.7/assert';
+import {assertEquals} from 'jsr:@std/assert@1.0.15/equals';
+import {assert} from 'jsr:@std/assert@1.0.15/assert';
 
-const DENO_READER_HAS_BUG = true;
+/**	Embedded deno reader fails with `error: Promise resolution is still pending but the event loop has already resolved`
+	when calling `read()`.
+ **/
+const DENO_READER_HAS_BUG_1 = true;
+
+/**	Embedded deno reader hangs forever when calling `read(view, {min})` when there are few bytes left that the specified `min`.
+ **/
+const DENO_READER_HAS_BUG_2 = true;
 
 // deno-lint-ignore no-explicit-any
 type Any = any;
@@ -1738,9 +1745,63 @@ Deno.test
 				assertEquals(nCalled, 4);
 
 				// Read at EOF
-				if (a==1 || !DENO_READER_HAS_BUG)
+				if (a==1 || !DENO_READER_HAS_BUG_1)
 				{	const {done: done3} = await r.read(b);
 					assertEquals(done3, true);
+					assertEquals(nCalled, 5);
+				}
+			}
+			finally
+			{	r.releaseLock();
+			}
+		}
+	}
+);
+
+Deno.test
+(	'Read min, request more than available',
+	async () =>
+	{	for (let a=0; a<2; a++) // ReadableStream or RdStream
+		{	let lor = textEncoder.encode(LOR);
+			let limit = Number.MAX_SAFE_INTEGER;
+			let nCalled = 0;
+
+			// deno-lint-ignore no-inner-declarations
+			function read(view: Uint8Array)
+			{	nCalled++;
+				if (lor.byteLength == 0)
+				{	return null;
+				}
+				const nRead = Math.min(lor.byteLength, view.byteLength, limit);
+				view.set(lor.subarray(0, nRead));
+				lor = lor.subarray(nRead);
+				return nRead;
+			}
+
+			const rs = a==0 ? new ReadableStream({...readToPull(read)}) : new RdStream({read});
+			const r = rs.getReader({mode: 'byob'});
+
+			try
+			{	let b = new Uint8Array(lor.byteLength);
+
+				// Read first 30 bytes
+				limit = 10;
+				const {value, done} = await r.read(b, {min: 25});
+				assertEquals(done, false);
+				assert(value);
+				b = new Uint8Array(value.buffer, 0, value.buffer.byteLength);
+				assertEquals(value.byteLength, 30);
+				assertEquals(textDecoder.decode(value), LOR.slice(0, 30));
+				assertEquals(nCalled, 3);
+
+				// Read the rest
+				if (a==1 || !DENO_READER_HAS_BUG_2)
+				{	limit = Number.MAX_SAFE_INTEGER;
+					const {value: value2, done: done2} = await r.read(b, {min: b.byteLength});
+					assertEquals(done2, true);
+					assert(value2);
+					b = new Uint8Array(value2.buffer, 0, value2.buffer.byteLength);
+					assertEquals(textDecoder.decode(value2), LOR.slice(30));
 					assertEquals(nCalled, 5);
 				}
 			}
