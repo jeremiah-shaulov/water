@@ -52,10 +52,12 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 	 **/
 	override readonly readable: RdStream;
 
-	constructor(transformer: Transformer)
+	constructor(transformer?: Transformer)
 	{	super();
 
-		const {start, transform, flush} = transformer;
+		const start = transformer?.start;
+		const transform = transformer?.transform ?? ((w, c) => w.write(c).then(() => c.byteLength));
+		const flush = transformer?.flush;
 		let currentChunk = EMPTY_CHUNK;
 		let currentChunkResolve: ((n: number) => void) | undefined;
 		let currentViewResolve: ((n: number) => void) | undefined;
