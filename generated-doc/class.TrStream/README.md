@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {TrStream} from "https://deno.land/x/water@v1.0.29/mod.ts"
+import {TrStream} from "https://deno.land/x/water@v1.0.30/mod.ts"
 ```
 
 ## This class has
@@ -15,7 +15,7 @@ import {TrStream} from "https://deno.land/x/water@v1.0.29/mod.ts"
 - base class
 
 
-#### 🔧 `constructor`(transformer: [Transformer](../type.Transformer/README.md))
+#### 🔧 `constructor`(transformer?: [Transformer](../type.Transformer/README.md))
 
 
 

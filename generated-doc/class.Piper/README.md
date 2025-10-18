@@ -4,16 +4,16 @@
 
 ## This class has
 
-- [constructor](#-constructorbuffer-uint8array-autoallocatemin-number)
+- [constructor](#-constructorbuffer-uint8arrayarraybuffer-autoallocatemin-number)
 - 5 methods:
 [pipeTo](#-pipetowriterclosedpromise-promisevoid-callbacksforread-callbacks-callbackwriteinverting-chunk-uint8array-canreturnzero-boolean--number--promiselikenumber-promiseboolean),
 [read](#-readview-uint8array-uint8arrayarraybufferlike),
 [unread](#-unreadchunk-uint8array-void),
-[unwrap](#-unwrap-uint8arrayarraybufferlike),
-[dispose](#-dispose-uint8arrayarraybufferlike)
+[unwrap](#-unwrap-uint8arrayarraybuffer),
+[dispose](#-dispose-uint8arrayarraybuffer)
 
 
-#### 🔧 `constructor`(buffer: Uint8Array, autoAllocateMin: `number`)
+#### 🔧 `constructor`(buffer: Uint8Array\<ArrayBuffer>, autoAllocateMin: `number`)
 
 
 
@@ -29,11 +29,11 @@
 
 
 
-#### ⚙ unwrap(): Uint8Array\<ArrayBufferLike>
+#### ⚙ unwrap(): Uint8Array\<ArrayBuffer>
 
 
 
-#### ⚙ dispose(): Uint8Array\<ArrayBufferLike>
+#### ⚙ dispose(): Uint8Array\<ArrayBuffer>
 
 
 

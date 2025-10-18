@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Reader} from "https://deno.land/x/water@v1.0.29/mod.ts"
+import {Reader} from "https://deno.land/x/water@v1.0.30/mod.ts"
 ```
 
 This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.
@@ -21,10 +21,10 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 [tee](#-teeoptions-requireparallelread-boolean-rdstream-rdstream),
 [pipeTo](#-pipetodest-writablestreamuint8array-options-streampipeoptionslocal-promisevoid),
 [pipeThrough](#-pipethrought-w-extends-writablestreamuint8array-r-extends-readablestreamttransform-readonly-writable-w-readonly-readable-r-options-streampipeoptionslocal-r),
-[bytes](#-bytesoptions-lengthlimit-number-promiseuint8arrayarraybufferlike),
+[bytes](#-bytesoptions-lengthlimit-number-promiseuint8arrayarraybuffer),
 [text](#-textlabel-string-options-textdecoderoptions--lengthlimit-number-promisestring),
 [\[Symbol.asyncIterator\]](#-symbolasynciteratoroptions-preventcancel-boolean-readablestreamiterator)
-- [deprecated symbol](#-deprecated-uint8arrayoptions-lengthlimit-number-promiseuint8arrayarraybufferlike)
+- [deprecated symbol](#-deprecated-uint8arrayoptions-lengthlimit-number-promiseuint8arrayarraybuffer)
 - 7 inherited members from [ReaderOrWriter](../class.ReaderOrWriter/README.md)
 
 
@@ -115,7 +115,7 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 
 
 
-#### ⚙ bytes(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array\<ArrayBufferLike>>
+#### ⚙ bytes(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array\<ArrayBuffer>>
 
 > Reads the whole stream to memory.
 > If `lengthLimit` is specified (and is positive number), and the stream happens to be bigger than this number,
@@ -137,7 +137,7 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 
 <div style="opacity:0.6">
 
-#### ⚙ `deprecated` uint8Array(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array\<ArrayBufferLike>>
+#### ⚙ `deprecated` uint8Array(options?: \{lengthLimit?: `number`}): Promise\<Uint8Array\<ArrayBuffer>>
 
 > `deprecated`
 > 
