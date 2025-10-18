@@ -295,7 +295,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 		const autoAllocateMin = Math.min(autoAllocateChunkSize, autoAllocateMinU && autoAllocateMinU>0 ? autoAllocateMinU : Math.max(256, autoAllocateChunkSize >> 3));
 		const callbackAccessor =  new ReadCallbackAccessor(autoAllocateChunkSize, autoAllocateMin, source);
 		let hackishEnabled = false;
-		let buffer: Uint8Array|undefined;
+		let buffer: Uint8Array<ArrayBuffer>|undefined;
 		super
 		(	// `deno_web/06_streams.js` uses hackish way to call methods of `ReadableStream` subclasses.
 			// When this class is being used like this, the following callbacks are called:
@@ -555,7 +555,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 class ReadCallbackAccessor extends CallbackAccessor
 {	curPiper: Piper|undefined;
 
-	#autoAllocateBuffer: Uint8Array|undefined;
+	#autoAllocateBuffer: Uint8Array<ArrayBuffer>|undefined;
 
 	constructor
 	(	public autoAllocateChunkSize: number,
@@ -572,7 +572,6 @@ class ReadCallbackAccessor extends CallbackAccessor
 		return this.useCallbacks
 		(	async callbacks =>
 			{	let nFilled = 0;
-				const isAllocatedBuffer = !view;
 				const {curPiper} = this;
 				if (curPiper)
 				{	if (!view)
@@ -601,16 +600,17 @@ class ReadCallbackAccessor extends CallbackAccessor
 						}
 					}
 				}
+				let autoView: Uint8Array<ArrayBuffer>|undefined;
 				if (!view)
-				{	view = this.#autoAllocateBuffer ?? new Uint8Array(this.autoAllocateChunkSize);
+				{	view = autoView = this.#autoAllocateBuffer ?? new Uint8Array(this.autoAllocateChunkSize);
 					this.#autoAllocateBuffer = undefined;
 				}
 				while (true)
 				{	const nRead = await callbacks.read!(view.subarray(nFilled));
-					if (isAllocatedBuffer)
+					if (autoView)
 					{	const end = view.byteOffset + (nRead ?? 0);
 						if (view.buffer.byteLength-end >= this.autoAllocateMin)
-						{	this.#autoAllocateBuffer = new Uint8Array(view.buffer, end);
+						{	this.#autoAllocateBuffer = new Uint8Array(autoView.buffer, end);
 						}
 					}
 					if (!nRead)
@@ -843,7 +843,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		const callbackAccessor = this.getCallbackAccessor();
 		const result = await callbackAccessor.useCallbacks
 		(	async callbacks =>
-			{	const chunks = new Array<Uint8Array>;
+			{	const chunks = new Array<Uint8Array<ArrayBuffer>>;
 				let totalLen = 0;
 				const {curPiper} = callbackAccessor;
 				if (curPiper)

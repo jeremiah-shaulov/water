@@ -8,7 +8,7 @@ export class Piper
 	private readPromise: number | null | PromiseLike<number|null> | undefined; // pending read operation that reads to the buffer
 	private isEof = false; // i'll not read (i.e. create `readPromise`) if EOF reached
 
-	constructor(private buffer: Uint8Array, private autoAllocateMin: number)
+	constructor(private buffer: Uint8Array<ArrayBuffer>, private autoAllocateMin: number)
 	{
 	}
 
