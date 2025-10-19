@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Source} from "https://deno.land/x/water@v1.0.30/mod.ts"
+import {Source} from "https://deno.land/x/water@v1.0.31/mod.ts"
 ```
 
 ## This type has

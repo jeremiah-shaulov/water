@@ -1,6 +1,6 @@
 <!--
 	This file is generated with the following command:
-	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.51/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.30/README.md --importUrl=https://deno.land/x/water@v1.0.30/mod.ts mod.ts
+	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.51/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.31/README.md --importUrl=https://deno.land/x/water@v1.0.31/mod.ts mod.ts
 -->
 
 # water - Alternative to ReadableStream, WritableStream and TransformStream.
@@ -111,10 +111,10 @@ Additional features:
 ## Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'https://deno.land/x/water@v1.0.30/mod.ts';
-import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.30/mod.ts';
-import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.30/mod.ts';
-import {TooBigError} from 'https://deno.land/x/water@v1.0.30/mod.ts';
+import {RdStream, Source} from 'https://deno.land/x/water@v1.0.31/mod.ts';
+import {WrStream, Sink} from 'https://deno.land/x/water@v1.0.31/mod.ts';
+import {TrStream, Transformer} from 'https://deno.land/x/water@v1.0.31/mod.ts';
+import {TooBigError} from 'https://deno.land/x/water@v1.0.31/mod.ts';
 ```
 
 - [RdStream](generated-doc/class.RdStream/README.md)
@@ -173,7 +173,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'https://deno.land/x/water@v1.0.30/mod.ts';
+import {RdStream} from 'https://deno.land/x/water@v1.0.31/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -407,7 +407,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 #### Example
 
 ```ts
-import {WrStream} from 'https://deno.land/x/water@v1.0.30/mod.ts';
+import {WrStream} from 'https://deno.land/x/water@v1.0.31/mod.ts';
 
 const EMPTY_CHUNK = new Uint8Array;
 
@@ -541,7 +541,7 @@ The following example demonstrates [TrStream](generated-doc/class.TrStream/READM
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.30/mod.ts';
+import {RdStream, TrStream} from 'https://deno.land/x/water@v1.0.31/mod.ts';
 
 // StringStreamer:
 
@@ -642,7 +642,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.30/mod.ts';
+import {RdStream, WrStream, TrStream} from 'https://deno.land/x/water@v1.0.31/mod.ts';
 
 // StringStreamer:
 
@@ -710,7 +710,7 @@ console.log('\nRest: '+await tokens.text());
 > `type` Transformer =<br>
 > {<br>
 > &nbsp; &nbsp; ⚙ [start](generated-doc/type.Transformer/README.md#-startwriter-writer-void--promiselikevoid)?(writer: [Writer](generated-doc/class.Writer/README.md)): `void` | PromiseLike\<`void`><br>
-> &nbsp; &nbsp; ⚙ [transform](generated-doc/type.Transformer/README.md#-transformwriter-writer-chunk-uint8array-canreturnzero-boolean-number--promiselikenumber)(writer: [Writer](generated-doc/class.Writer/README.md), chunk: Uint8Array, canReturnZero: `boolean`): `number` | PromiseLike\<`number`><br>
+> &nbsp; &nbsp; ⚙ [transform](generated-doc/type.Transformer/README.md#-transformwriter-writer-chunk-uint8array-canreturnzero-boolean-number--promiselikenumber)?(writer: [Writer](generated-doc/class.Writer/README.md), chunk: Uint8Array, canReturnZero: `boolean`): `number` | PromiseLike\<`number`><br>
 > &nbsp; &nbsp; ⚙ [flush](generated-doc/type.Transformer/README.md#-flushwriter-writer-void--promiselikevoid)?(writer: [Writer](generated-doc/class.Writer/README.md)): `void` | PromiseLike\<`void`><br>
 > }
 

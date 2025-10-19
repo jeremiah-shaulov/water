@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Transformer} from "https://deno.land/x/water@v1.0.30/mod.ts"
+import {Transformer} from "https://deno.land/x/water@v1.0.31/mod.ts"
 ```
 
 ## This type has
@@ -26,7 +26,7 @@ import {Transformer} from "https://deno.land/x/water@v1.0.30/mod.ts"
 
 
 
-#### ⚙ transform(writer: [Writer](../class.Writer/README.md), chunk: Uint8Array, canReturnZero: `boolean`): `number` | PromiseLike\<`number`>
+#### ⚙ transform?(writer: [Writer](../class.Writer/README.md), chunk: Uint8Array, canReturnZero: `boolean`): `number` | PromiseLike\<`number`>
 
 > During stream transformation this callback gets called for chunks (pieces) of incoming data.
 > This callback is expected to transform the data as needed, and to write the result to a `writer`
