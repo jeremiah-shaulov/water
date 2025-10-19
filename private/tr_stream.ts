@@ -27,7 +27,7 @@ export type Transformer =
 		`transform()` with the same chunk and `!canReturnZero`.
 		In order to provide a larger chunk, the caller of this callback may be required to reallocate (grow) it's internal buffer.
 	 **/
-	transform(writer: Writer, chunk: Uint8Array, canReturnZero: boolean): number | PromiseLike<number>;
+	transform?(writer: Writer, chunk: Uint8Array, canReturnZero: boolean): number | PromiseLike<number>;
 
 	/**	At last, when the whole stream was transformed, this callback is called.
 	 **/
@@ -40,6 +40,33 @@ enum UseCanReturnZero
 {	YES, NO, UNKNOWN
 }
 
+/**	This object creates a pair of readable and writable streams, and allows to transform data
+	written to it's writable stream by a user-provided callback function, making the transformed data
+	available for reading from it's readable stream.
+
+	The transformation function is optional.
+	If you omit it, the object will simply pass the data through it, and it can be used to convert
+	a writable stream to a readable one.
+	This is particularly useful when you want to use writer to write a web server response body.
+
+	```ts
+	const {writable, readable} = new TrStream({flush: () => promise});
+
+	// deno-lint-ignore no-var
+	var promise = writeResponse(writable);
+
+	return new Response(readable, {headers: {'Content-Type': 'text/html'}});
+
+	async function writeResponse(writable: WrStream)
+	{	try
+		{	await writable.write('Content');
+		}
+		finally
+		{	writable.close().catch(e => console.error(e)); // don't await the returned promise to avoid deadlock
+		}
+	}
+	```
+ **/
 export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 {	// properties:
 
