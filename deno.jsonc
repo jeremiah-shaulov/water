@@ -1,0 +1,5 @@
+{	"name": "@shaulov/water",
+	"version": "1.0.31",
+	"license": "MIT",
+	"exports": "./mod.ts"
+}
