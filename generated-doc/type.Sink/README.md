@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Sink} from "jsr:@shaulov/water@1.0.32"
+import {Sink} from "jsr:@shaulov/water@1.0.33"
 ```
 
 ## This type has

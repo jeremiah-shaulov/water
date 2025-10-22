@@ -1,6 +1,6 @@
 <!--
 	This file is generated with the following command:
-	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.52/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.32/README.md --importUrl=jsr:@shaulov/water@1.0.32 mod.ts
+	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.53/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.33/README.md --importUrl=jsr:@shaulov/water@1.0.33 mod.ts
 -->
 
 # water - Alternative to ReadableStream, WritableStream and TransformStream.
@@ -111,10 +111,10 @@ Additional features:
 ## Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'jsr:@shaulov/water@1.0.32//mod.ts';
-import {WrStream, Sink} from 'jsr:@shaulov/water@1.0.32//mod.ts';
-import {TrStream, Transformer} from 'jsr:@shaulov/water@1.0.32//mod.ts';
-import {TooBigError} from 'jsr:@shaulov/water@1.0.32//mod.ts';
+import {RdStream, Source} from 'jsr:@shaulov/water@1.0.33/mod.ts';
+import {WrStream, Sink} from 'jsr:@shaulov/water@1.0.33/mod.ts';
+import {TrStream, Transformer} from 'jsr:@shaulov/water@1.0.33/mod.ts';
+import {TooBigError} from 'jsr:@shaulov/water@1.0.33/mod.ts';
 ```
 
 - [RdStream](generated-doc/class.RdStream/README.md)
@@ -173,7 +173,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'jsr:@shaulov/water@1.0.32//mod.ts';
+import {RdStream} from 'jsr:@shaulov/water@1.0.33/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -407,7 +407,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 #### Example
 
 ```ts
-import {WrStream} from 'jsr:@shaulov/water@1.0.32//mod.ts';
+import {WrStream} from 'jsr:@shaulov/water@1.0.33/mod.ts';
 
 const EMPTY_CHUNK = new Uint8Array;
 
@@ -541,7 +541,7 @@ The following example demonstrates [TrStream](generated-doc/class.TrStream/READM
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'jsr:@shaulov/water@1.0.32//mod.ts';
+import {RdStream, TrStream} from 'jsr:@shaulov/water@1.0.33/mod.ts';
 
 // StringStreamer:
 
@@ -642,7 +642,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'jsr:@shaulov/water@1.0.32//mod.ts';
+import {RdStream, WrStream, TrStream} from 'jsr:@shaulov/water@1.0.33/mod.ts';
 
 // StringStreamer:
 
