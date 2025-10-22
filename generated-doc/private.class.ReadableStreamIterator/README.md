@@ -7,9 +7,9 @@
 - [constructor](#-constructorreader-readablestreamdefaultreaderuint8array-preventcancel-boolean)
 - [destructor](#-symboldispose-void)
 - 4 methods:
-[next](#-next-promiseitresult),
-[return](#-returnvalue-uint8array-promiseitresultdone),
-[throw](#-throw-promiseitresultdone),
+[next](#-next-promiseitresultuint8arrayarraybufferlike),
+[return](#-returnvalue-uint8array-promiseitresultdoneuint8arrayarraybufferlike),
+[throw](#-throw-promiseitresultdoneuint8arrayarraybufferlike),
 [\[Symbol.asyncIterator\]](#-symbolasynciterator-this)
 
 
@@ -21,15 +21,15 @@
 
 
 
-#### ⚙ next(): Promise\<ItResult>
+#### ⚙ next(): Promise\<ItResult\<Uint8Array\<ArrayBufferLike>>>
 
 
 
-#### ⚙ return(value?: Uint8Array): Promise\<ItResultDone>
+#### ⚙ return(value?: Uint8Array): Promise\<ItResultDone\<Uint8Array\<ArrayBufferLike>>>
 
 
 
-#### ⚙ throw(): Promise\<ItResultDone>
+#### ⚙ throw(): Promise\<ItResultDone\<Uint8Array\<ArrayBufferLike>>>
 
 
 

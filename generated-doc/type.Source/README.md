@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Source} from "jsr:@shaulov/water@1.0.33"
+import {Source} from "jsr:@shaulov/water@1.0.34"
 ```
 
 ## This type has

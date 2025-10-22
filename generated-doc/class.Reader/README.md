@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Reader} from "jsr:@shaulov/water@1.0.33"
+import {Reader} from "jsr:@shaulov/water@1.0.34"
 ```
 
 This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.
@@ -13,8 +13,8 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 - [constructor](#-constructorcallbackaccessor-somecallbackaccessor--undefined-onrelease-voidfunction)
 - property [capNoTransferRead](#-readonly-capnotransferread-true)
 - 11 methods:
-[read](#-read-promiseitresultopt),
-[read](#-readv-extends-arraybufferviewview-v-options-min-number-promiseitresultopt),
+[read](#-read-promiseitresultoptuint8arrayarraybufferlike),
+[read](#-readv-extends-arraybufferviewview-v-options-min-number-promiseitresultoptv),
 [cancel](#-cancelreason-unknown-promisevoid),
 [unread](#-unreadchunk-uint8array-void),
 [values](#-valuesoptions-preventcancel-boolean-readablestreamiterator),
@@ -56,11 +56,11 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 
 
 
-#### ⚙ read(): Promise\<ItResultOpt>
+#### ⚙ read(): Promise\<ItResultOpt\<Uint8Array\<ArrayBufferLike>>>
 
 
 
-#### ⚙ read\<V `extends` ArrayBufferView>(view: V, options?: \{min?: `number`}): Promise\<ItResultOpt>
+#### ⚙ read\<V `extends` ArrayBufferView>(view: V, options?: \{min?: `number`}): Promise\<ItResultOpt\<V>>
 
 
 

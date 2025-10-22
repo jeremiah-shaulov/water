@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {RdStream} from "jsr:@shaulov/water@1.0.33"
+import {RdStream} from "jsr:@shaulov/water@1.0.34"
 ```
 
 This class extends `ReadableStream<Uint8Array>`, and can be used as it's substitutor.

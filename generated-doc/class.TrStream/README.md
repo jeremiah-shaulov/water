@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {TrStream} from "jsr:@shaulov/water@1.0.33"
+import {TrStream} from "jsr:@shaulov/water@1.0.34"
 ```
 
 This object creates a pair of readable and writable streams, and allows to transform data

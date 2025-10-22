@@ -1,6 +1,6 @@
 <!--
 	This file is generated with the following command:
-	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.53/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.33/README.md --importUrl=jsr:@shaulov/water@1.0.33 mod.ts
+	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.54/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.34/README.md --importUrl=jsr:@shaulov/water@1.0.34 mod.ts
 -->
 
 # water - Alternative to ReadableStream, WritableStream and TransformStream.
@@ -111,10 +111,10 @@ Additional features:
 ## Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'jsr:@shaulov/water@1.0.33/mod.ts';
-import {WrStream, Sink} from 'jsr:@shaulov/water@1.0.33/mod.ts';
-import {TrStream, Transformer} from 'jsr:@shaulov/water@1.0.33/mod.ts';
-import {TooBigError} from 'jsr:@shaulov/water@1.0.33/mod.ts';
+import {RdStream, Source} from 'jsr:@shaulov/water@1.0.34/mod.ts';
+import {WrStream, Sink} from 'jsr:@shaulov/water@1.0.34/mod.ts';
+import {TrStream, Transformer} from 'jsr:@shaulov/water@1.0.34/mod.ts';
+import {TooBigError} from 'jsr:@shaulov/water@1.0.34/mod.ts';
 ```
 
 - [RdStream](generated-doc/class.RdStream/README.md)
@@ -173,7 +173,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'jsr:@shaulov/water@1.0.33/mod.ts';
+import {RdStream} from 'jsr:@shaulov/water@1.0.34/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -225,9 +225,9 @@ To indicate EOF it can return either `0` or `null`.
 It can return result asynchronously (`Promise` object) or synchronously (number or null result).
 
 Stream consumer can read the stream in [regular or "BYOB" mode](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream/getReader#mode).
-In BYOB, the consumer provides it's own buffer, which is passed to [Reader.read()](generated-doc/class.Reader/README.md#-readv-extends-arraybufferviewview-v-options-min-number-promiseitresultopt).
+In BYOB, the consumer provides it's own buffer, which is passed to [Reader.read()](generated-doc/class.Reader/README.md#-readv-extends-arraybufferviewview-v-options-min-number-promiseitresultoptv).
 This buffer can be of any non-zero size.
-In regular mode a buffer of at least [autoAllocateMin](generated-doc/type.Source/README.md#-autoallocatemin-number) bytes is allocated (and passed to [Reader.read()](generated-doc/class.Reader/README.md#-readv-extends-arraybufferviewview-v-options-min-number-promiseitresultopt)).
+In regular mode a buffer of at least [autoAllocateMin](generated-doc/type.Source/README.md#-autoallocatemin-number) bytes is allocated (and passed to [Reader.read()](generated-doc/class.Reader/README.md#-readv-extends-arraybufferviewview-v-options-min-number-promiseitresultoptv)).
 The maximum auto-allocated buffer size is [autoAllocateChunkSize](generated-doc/type.Source/README.md#-autoallocatechunksize-number).
 
 When [read()](generated-doc/type.Source/README.md#-readview-uint8array-number--promiselikenumber) returned EOF (`0` or `null`), [close()](generated-doc/type.Source/README.md#-close-void--promiselikevoid) gets called to finalize the stream generator.
@@ -268,7 +268,7 @@ Like [getReader()](generated-doc/class.RdStream/README.md#-override-getreaderopt
 
 > ⚙ `override` RdStream.[cancel](generated-doc/class.RdStream/README.md#-override-cancelreason-unknown-promisevoid)(reason?: `unknown`): Promise\<`void`>
 
-Interrupt current reading operation (reject the promise that [Reader.read()](generated-doc/class.Reader/README.md#-readv-extends-arraybufferviewview-v-options-min-number-promiseitresultopt) returned, if any),
+Interrupt current reading operation (reject the promise that [Reader.read()](generated-doc/class.Reader/README.md#-readv-extends-arraybufferviewview-v-options-min-number-promiseitresultoptv) returned, if any),
 and tell to discard further data in the stream.
 This leads to calling [Source.cancel(reason)](generated-doc/type.Source/README.md#-cancelreason-unknown-void--promiselikevoid), even if current [Source.read()](generated-doc/type.Source/README.md#-readview-uint8array-number--promiselikenumber) didn't finish.
 [Source.cancel()](generated-doc/type.Source/README.md#-cancelreason-unknown-void--promiselikevoid) must implement the actual behavior on how to discard further data,
@@ -407,7 +407,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 #### Example
 
 ```ts
-import {WrStream} from 'jsr:@shaulov/water@1.0.33/mod.ts';
+import {WrStream} from 'jsr:@shaulov/water@1.0.34/mod.ts';
 
 const EMPTY_CHUNK = new Uint8Array;
 
@@ -541,7 +541,7 @@ The following example demonstrates [TrStream](generated-doc/class.TrStream/READM
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'jsr:@shaulov/water@1.0.33/mod.ts';
+import {RdStream, TrStream} from 'jsr:@shaulov/water@1.0.34/mod.ts';
 
 // StringStreamer:
 
@@ -642,7 +642,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'jsr:@shaulov/water@1.0.33/mod.ts';
+import {RdStream, WrStream, TrStream} from 'jsr:@shaulov/water@1.0.34/mod.ts';
 
 // StringStreamer:
 
