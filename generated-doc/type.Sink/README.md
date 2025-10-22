@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Sink} from "https://deno.land/x/water@v1.0.31/mod.ts"
+import {Sink} from "jsr:@shaulov/water@1.0.32"
 ```
 
 ## This type has

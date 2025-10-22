@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Writer} from "https://deno.land/x/water@v1.0.31/mod.ts"
+import {Writer} from "jsr:@shaulov/water@1.0.32"
 ```
 
 ## This class has
