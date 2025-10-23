@@ -1,5 +1,5 @@
-import {ItResultOpt} from './common.ts';
-import {_useLowLevelCallbacks} from './wr_stream.ts';
+import type {ItResultOpt} from './common.ts';
+import type {_useLowLevelCallbacks} from './wr_stream.ts';
 
 export class TeeRegular
 {	#promise = Promise.resolve();

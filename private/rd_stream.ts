@@ -1,4 +1,4 @@
-import {DEFAULT_AUTO_ALLOCATE_SIZE, Callbacks, CallbackAccessor, ReaderOrWriter, ItResult, ItResultDone, ItResultOpt} from './common.ts';
+import {DEFAULT_AUTO_ALLOCATE_SIZE, type Callbacks, CallbackAccessor, ReaderOrWriter, type ItResult, type ItResultDone, type ItResultOpt} from './common.ts';
 import {Writer, _useLowLevelCallbacks} from './wr_stream.ts';
 import {Piper} from './piper.ts';
 import {TeeRegular, TeeRequireParallelRead} from './tee.ts';

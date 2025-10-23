@@ -1,4 +1,4 @@
-import {Callbacks} from './common.ts';
+import type {Callbacks} from './common.ts';
 
 export class Piper
 {	private readPos = 0; // read to `buffer[readPos ..]`

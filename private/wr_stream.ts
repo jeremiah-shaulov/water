@@ -1,4 +1,4 @@
-import {DEFAULT_AUTO_ALLOCATE_SIZE, Callbacks, CallbackAccessor, ReaderOrWriter} from './common.ts';
+import {DEFAULT_AUTO_ALLOCATE_SIZE, type Callbacks, CallbackAccessor, ReaderOrWriter} from './common.ts';
 
 export const _closeEvenIfLocked = Symbol('_closeEvenIfLocked');
 export const _useLowLevelCallbacks = Symbol('_useLowLevelCallbacks');

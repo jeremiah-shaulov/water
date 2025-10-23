@@ -1,5 +1,5 @@
 import {RdStream} from './rd_stream.ts';
-import {WrStream, WrStreamInternal, Writer, WriteCallbackAccessor, _closeEvenIfLocked} from './wr_stream.ts';
+import {type WrStream, WrStreamInternal, Writer, WriteCallbackAccessor, _closeEvenIfLocked} from './wr_stream.ts';
 
 // deno-lint-ignore no-explicit-any
 type Any = any;
