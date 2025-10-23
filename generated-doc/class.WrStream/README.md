@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {WrStream} from "jsr:@shaulov/water@1.0.34"
+import {WrStream} from "jsr:@shaulov/water@1.1.0"
 ```
 
 ## This class has

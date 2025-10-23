@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Writer} from "jsr:@shaulov/water@1.0.34"
+import {Writer} from "jsr:@shaulov/water@1.1.0"
 ```
 
 ## This class has

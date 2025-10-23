@@ -1,6 +1,6 @@
 <!--
 	This file is generated with the following command:
-	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.54/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.0.34/README.md --importUrl=jsr:@shaulov/water@1.0.34 mod.ts
+	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.55/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/v1.1.0/README.md --importUrl=jsr:@shaulov/water@1.1.0 mod.ts
 -->
 
 # water - Alternative to ReadableStream, WritableStream and TransformStream.
@@ -111,10 +111,10 @@ Additional features:
 ## Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'jsr:@shaulov/water@1.0.34/mod.ts';
-import {WrStream, Sink} from 'jsr:@shaulov/water@1.0.34/mod.ts';
-import {TrStream, Transformer} from 'jsr:@shaulov/water@1.0.34/mod.ts';
-import {TooBigError} from 'jsr:@shaulov/water@1.0.34/mod.ts';
+import {RdStream, Source} from 'jsr:@shaulov/water@1.1.0/mod.ts';
+import {WrStream, Sink} from 'jsr:@shaulov/water@1.1.0/mod.ts';
+import {TrStream, Transformer} from 'jsr:@shaulov/water@1.1.0/mod.ts';
+import {TooBigError} from 'jsr:@shaulov/water@1.1.0/mod.ts';
 ```
 
 - [RdStream](generated-doc/class.RdStream/README.md)
@@ -173,7 +173,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'jsr:@shaulov/water@1.0.34/mod.ts';
+import {RdStream} from 'jsr:@shaulov/water@1.1.0/mod.ts';
 
 const textEncoder = new TextEncoder;
 
@@ -205,6 +205,7 @@ await new StringStreamer('Hello\n').pipeTo(Deno.stdout.writable);
 > {<br>
 > &nbsp; &nbsp; 📄 [autoAllocateChunkSize](generated-doc/type.Source/README.md#-autoallocatechunksize-number)?: `number`<br>
 > &nbsp; &nbsp; 📄 [autoAllocateMin](generated-doc/type.Source/README.md#-autoallocatemin-number)?: `number`<br>
+> &nbsp; &nbsp; 📄 [throwAfterCancel](generated-doc/type.Source/README.md#-throwaftercancel-boolean)?: `boolean`<br>
 > &nbsp; &nbsp; ⚙ [start](generated-doc/type.Source/README.md#-start-void--promiselikevoid)?(): `void` | PromiseLike\<`void`><br>
 > &nbsp; &nbsp; ⚙ [read](generated-doc/type.Source/README.md#-readview-uint8array-number--promiselikenumber)(view: Uint8Array): `number` | PromiseLike\<`number`><br>
 > &nbsp; &nbsp; ⚙ [close](generated-doc/type.Source/README.md#-close-void--promiselikevoid)?(): `void` | PromiseLike\<`void`><br>
@@ -407,7 +408,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 #### Example
 
 ```ts
-import {WrStream} from 'jsr:@shaulov/water@1.0.34/mod.ts';
+import {WrStream} from 'jsr:@shaulov/water@1.1.0/mod.ts';
 
 const EMPTY_CHUNK = new Uint8Array;
 
@@ -541,7 +542,7 @@ The following example demonstrates [TrStream](generated-doc/class.TrStream/READM
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'jsr:@shaulov/water@1.0.34/mod.ts';
+import {RdStream, TrStream} from 'jsr:@shaulov/water@1.1.0/mod.ts';
 
 // StringStreamer:
 
@@ -642,7 +643,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'jsr:@shaulov/water@1.0.34/mod.ts';
+import {RdStream, WrStream, TrStream} from 'jsr:@shaulov/water@1.1.0/mod.ts';
 
 // StringStreamer:
 

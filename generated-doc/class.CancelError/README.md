@@ -1,9 +1,9 @@
-# `class` TooBigError `extends` Error
+# `class` CancelError `extends` Error
 
 [Documentation Index](../README.md)
 
 ```ts
-import {TooBigError} from "jsr:@shaulov/water@1.1.0"
+import {CancelError} from "jsr:@shaulov/water@1.1.0"
 ```
 
 ## This class has

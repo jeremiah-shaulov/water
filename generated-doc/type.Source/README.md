@@ -3,14 +3,15 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Source} from "jsr:@shaulov/water@1.0.34"
+import {Source} from "jsr:@shaulov/water@1.1.0"
 ```
 
 ## This type has
 
-- 2 properties:
+- 3 properties:
 [autoAllocateChunkSize](#-autoallocatechunksize-number),
-[autoAllocateMin](#-autoallocatemin-number)
+[autoAllocateMin](#-autoallocatemin-number),
+[throwAfterCancel](#-throwaftercancel-boolean)
 - 6 methods:
 [start](#-start-void--promiselikevoid),
 [read](#-readview-uint8array-number--promiselikenumber),
@@ -32,6 +33,14 @@ import {Source} from "jsr:@shaulov/water@1.0.34"
 > When auto-allocating (reading in non-byob mode) will not call `read()` with buffers smaller than this.
 > First i'll allocate `autoAllocateChunkSize` bytes, and if `read()` callback fills in only a small part of them
 > (so there're >= `autoAllocateMin` unused bytes in the buffer), i'll reuse that part of the buffer in next `read()` calls.
+
+
+
+#### 📄 throwAfterCancel?: `boolean`
+
+> If this property is set to true, and the stream is canceled, an exception will be thrown on attempt to read from it.
+> This is different from standard behavior (observed on built-in ReadableStream objects).
+> The standard behavior is to return EOF on read after cancel.
 
 
 

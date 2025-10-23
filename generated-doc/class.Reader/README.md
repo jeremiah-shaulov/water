@@ -3,14 +3,14 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Reader} from "jsr:@shaulov/water@1.0.34"
+import {Reader} from "jsr:@shaulov/water@1.1.0"
 ```
 
 This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.
 
 ## This class has
 
-- [constructor](#-constructorcallbackaccessor-somecallbackaccessor--undefined-onrelease-voidfunction)
+- [constructor](#-constructorthrowaftercancel-boolean-callbackaccessor-readcallbackaccessor--undefined-onrelease-voidfunction)
 - property [capNoTransferRead](#-readonly-capnotransferread-true)
 - 11 methods:
 [read](#-read-promiseitresultoptuint8arrayarraybufferlike),
@@ -28,7 +28,7 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 - 7 inherited members from [ReaderOrWriter](../class.ReaderOrWriter/README.md)
 
 
-#### 🔧 `constructor`(callbackAccessor: SomeCallbackAccessor | `undefined`, onRelease: VoidFunction)
+#### 🔧 `constructor`(throwAfterCancel: `boolean`, callbackAccessor: [ReadCallbackAccessor](../private.class.ReadCallbackAccessor/README.md) | `undefined`, onRelease: VoidFunction)
 
 
 
