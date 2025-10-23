@@ -1,9 +1,8 @@
 // To run:
 // rm -rf .vscode/coverage/profile && deno test --fail-fast --trace-leaks --allow-all --coverage=.vscode/coverage/profile private/tests/all.test.ts && deno coverage --unstable .vscode/coverage/profile --lcov > .vscode/coverage/lcov.info
 
-import {RdStream, Source, TrStream, WrStream} from '../../mod.ts';
-import {assertEquals} from 'jsr:@std/assert@1.0.15/equals';
-import {assert} from 'jsr:@std/assert@1.0.15/assert';
+import {RdStream, type Source, TrStream, WrStream} from '../../mod.ts';
+import {assertEquals, assert} from './deps.ts';
 
 /**	Embedded deno reader fails with `error: Promise resolution is still pending but the event loop has already resolved`
 	when calling `read()`.
@@ -391,12 +390,12 @@ Deno.test
 				assertEquals(log, ['<start>', '</start>', '<read>', '</read>', '<read>', '<cancel>', 'closed']);
 				assertEquals(res, {done: true, value: undefined});
 
-				let error: Any;
+				let error: Error|undefined;
 				try
 				{	await promise2;
 				}
 				catch (e)
-				{	error = e;
+				{	error = e instanceof Error ? e : new Error(e+'');
 				}
 
 				if (c == 0)
@@ -447,12 +446,12 @@ Deno.test
 
 			assertEquals(log, ['<start>']);
 
-			let error: Any;
+			let error: Error|undefined;
 			try
 			{	await promise;
 			}
 			catch (e)
-			{	error = e;
+			{	error = e instanceof Error ? e : new Error(e+'');
 			}
 			assertEquals(error?.message, 'Start failed');
 			assertEquals(log, ['<start>']);
@@ -475,12 +474,12 @@ Deno.test
 				return 1;
 			}
 
-			let error: Any;
+			let error: Error|undefined;
 			try
 			{	a==0 ? new ReadableStream({start, ...readToPull(read)}) : new RdStream({start, read});
 			}
 			catch (e)
-			{	error = e;
+			{	error = e instanceof Error ? e : new Error(e+'');
 			}
 			assertEquals(error?.message, 'Start failed');
 		}
@@ -751,12 +750,12 @@ Deno.test
 					assertEquals(res.value === undefined, true);
 				}
 				else
-				{	let error: Any;
+				{	let error: Error|undefined;
 					try
 					{	await r.read(new Uint8Array(b.buffer, 0, b.buffer.byteLength));
 					}
 					catch (e)
-					{	error = e;
+					{	error = e instanceof Error ? e : new Error(e+'');
 					}
 					assertEquals(closedWith?.error?.message, 'hello all');
 					assertEquals(error?.message, 'hello all');
@@ -768,7 +767,7 @@ Deno.test
 					{	await r2.read();
 					}
 					catch (e)
-					{	error = e;
+					{	error = e instanceof Error ? e : new Error(e+'');
 					}
 					assertEquals(error?.message, 'hello all');
 				}
@@ -1879,5 +1878,373 @@ Deno.test
 		await ws.flush();
 		await ws.close();
 		assertEquals(log, ['write(Text)', 'flush', 'close']);
+	}
+);
+
+Deno.test
+(	'Reader: throwAfterCancel - default behavior (false)',
+	async () =>
+	{	let lor = textEncoder.encode(LOR);
+
+		function read(view: Uint8Array)
+		{	if (lor.byteLength == 0)
+			{	return null;
+			}
+			const nRead = Math.min(lor.byteLength, view.byteLength, 10);
+			view.set(lor.subarray(0, nRead));
+			lor = lor.subarray(nRead);
+			return nRead;
+		}
+
+		// Default behavior: throwAfterCancel is false
+		const rs = new RdStream({read});
+		using reader = rs.getReader();
+
+		// Read some data
+		const {value: firstChunk} = await reader.read();
+		assertEquals(firstChunk?.byteLength, 10);
+
+		// Cancel the stream
+		await reader.cancel('User canceled');
+
+		// After cancel, read should return EOF without throwing
+		const {value, done} = await reader.read();
+		assertEquals(done, true);
+		assertEquals(value, undefined);
+
+		// Multiple reads should continue to return EOF
+		const {value: value2, done: done2} = await reader.read();
+		assertEquals(done2, true);
+		assertEquals(value2, undefined);
+	}
+);
+
+Deno.test
+(	'Reader: throwAfterCancel - throws on read after cancel',
+	async () =>
+	{	let lor = textEncoder.encode(LOR);
+
+		function read(view: Uint8Array)
+		{	if (lor.byteLength == 0)
+			{	return null;
+			}
+			const nRead = Math.min(lor.byteLength, view.byteLength, 10);
+			view.set(lor.subarray(0, nRead));
+			lor = lor.subarray(nRead);
+			return nRead;
+		}
+
+		// Enable throwAfterCancel
+		const rs = new RdStream({throwAfterCancel: true, read});
+		using reader = rs.getReader();
+
+		// Read some data
+		const {value: firstChunk} = await reader.read();
+		assertEquals(firstChunk?.byteLength, 10);
+
+		// Cancel the stream
+		await reader.cancel('User canceled');
+
+		// After cancel, read should throw
+		let error: Error|undefined;
+		try
+		{	await reader.read();
+		}
+		catch (e)
+		{	error = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(error?.message, 'Stream was canceled');
+
+		// Multiple read attempts should continue to throw
+		error = undefined;
+		try
+		{	await reader.read();
+		}
+		catch (e)
+		{	error = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(error?.message, 'Stream was canceled');
+	}
+);
+
+Deno.test
+(	'Reader: throwAfterCancel - BYOB mode',
+	async () =>
+	{	let lor = textEncoder.encode(LOR);
+
+		function read(view: Uint8Array)
+		{	if (lor.byteLength == 0)
+			{	return null;
+			}
+			const nRead = Math.min(lor.byteLength, view.byteLength, 10);
+			view.set(lor.subarray(0, nRead));
+			lor = lor.subarray(nRead);
+			return nRead;
+		}
+
+		// Enable throwAfterCancel
+		const rs = new RdStream({throwAfterCancel: true, read});
+		using reader = rs.getReader({mode: 'byob'});
+
+		// Read some data
+		const buffer1 = new Uint8Array(20);
+		const {value: firstChunk} = await reader.read(buffer1);
+		assertEquals(firstChunk?.byteLength, 10);
+
+		// Cancel the stream
+		await reader.cancel('User canceled');
+
+		// After cancel, BYOB read should throw
+		const buffer2 = new Uint8Array(20);
+		let error: Error|undefined;
+		try
+		{	await reader.read(buffer2);
+		}
+		catch (e)
+		{	error = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(error?.message, 'Stream was canceled');
+	}
+);
+
+Deno.test
+(	'Reader: throwAfterCancel - with read min option',
+	async () =>
+	{	let lor = textEncoder.encode(LOR);
+
+		function read(view: Uint8Array)
+		{	if (lor.byteLength == 0)
+			{	return null;
+			}
+			const nRead = Math.min(lor.byteLength, view.byteLength, 5);
+			view.set(lor.subarray(0, nRead));
+			lor = lor.subarray(nRead);
+			return nRead;
+		}
+
+		// Enable throwAfterCancel
+		const rs = new RdStream({throwAfterCancel: true, read});
+		using reader = rs.getReader({mode: 'byob'});
+
+		// Read some data with min option
+		const buffer1 = new Uint8Array(20);
+		const {value: firstChunk} = await reader.read(buffer1, {min: 10});
+		assertEquals(firstChunk && firstChunk.byteLength >= 10, true);
+
+		// Cancel the stream
+		await reader.cancel('User canceled');
+
+		// After cancel, read with min should throw
+		const buffer2 = new Uint8Array(20);
+		let error: Error|undefined;
+		try
+		{	await reader.read(buffer2, {min: 10});
+		}
+		catch (e)
+		{	error = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(error?.message, 'Stream was canceled');
+	}
+);
+
+Deno.test
+(	'Reader: throwAfterCancel - normal close (no cancel)',
+	async () =>
+	{	let lor = textEncoder.encode('Short');
+
+		function read(view: Uint8Array)
+		{	if (lor.byteLength == 0)
+			{	return null;
+			}
+			const nRead = Math.min(lor.byteLength, view.byteLength);
+			view.set(lor.subarray(0, nRead));
+			lor = lor.subarray(nRead);
+			return nRead;
+		}
+
+		// Enable throwAfterCancel - but we won't cancel, we'll read to end
+		const rs = new RdStream({throwAfterCancel: true, read});
+		using reader = rs.getReader();
+
+		// Read all data
+		const {value: firstChunk} = await reader.read();
+		assertEquals(textDecoder.decode(firstChunk), 'Short');
+
+		// Read at EOF - should return EOF, not throw (stream closed normally)
+		const {value, done} = await reader.read();
+		assertEquals(done, true);
+		assertEquals(value, undefined);
+	}
+);
+
+Deno.test
+(	'Reader: throwAfterCancel - cancel during pending read',
+	async () =>
+	{	let resolveRead: ((value: number) => void) | undefined;
+		let i = 0;
+
+		function read(view: Uint8Array)
+		{	return new Promise<number>(resolve =>
+			{	resolveRead = resolve;
+				view[0] = i++;
+			});
+		}
+
+		const cancel = () =>
+		{	// Resolve the pending read when cancel is called
+			if (resolveRead)
+			{	resolveRead(1);
+				resolveRead = undefined;
+			}
+		};
+
+		// Enable throwAfterCancel
+		const rs = new RdStream({throwAfterCancel: true, read, cancel});
+		using reader = rs.getReader();
+
+		// Start a read that won't complete immediately
+		const readPromise = reader.read();
+
+		// Wait a tick to ensure read has started
+		await new Promise(y => setTimeout(y, 1));
+
+		// Cancel while read is pending
+		await reader.cancel('Canceled during read');
+
+		// The read should complete with done=true
+		const {done} = await readPromise;
+		assertEquals(done, true);
+
+		// Subsequent reads should throw
+		let error: Error|undefined;
+		try
+		{	await reader.read();
+		}
+		catch (e)
+		{	error = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(error?.message, 'Stream was canceled');
+	}
+);
+
+Deno.test
+(	'Reader: throwAfterCancel - with tee()',
+	async () =>
+	{	let i = 1;
+
+		function read(view: Uint8Array)
+		{	if (i > 10)
+			{	return null;
+			}
+			view[0] = i++;
+			return 1;
+		}
+
+		// Enable throwAfterCancel on parent stream
+		const rs = new RdStream({throwAfterCancel: true, read});
+		{	using reader = rs.getReader();
+
+			// Read some data
+			const {value: v1} = await reader.read();
+			assertEquals(v1, new Uint8Array([1]));
+
+			// Cancel the parent stream
+			await reader.cancel('Stream canceled');
+
+			// Read from parent stream should throw
+			let error: Error|undefined;
+			try
+			{	await reader.read();
+			}
+			catch (e)
+			{	error = e instanceof Error ? e : new Error(e+'');
+			}
+			assertEquals(error?.message, 'Stream was canceled');
+		}
+
+		// Now test with tee() - the tee'd streams should inherit throwAfterCancel
+		i = 1; // Reset counter for new test
+		const rs2 = new RdStream({throwAfterCancel: true, read});
+		const [rs2a, rs2b] = rs2.tee();
+
+		using reader2a = rs2a.getReader();
+		using reader2b = rs2b.getReader();
+
+		// Read from first tee'd stream
+		const {value: v2a} = await reader2a.read();
+		assertEquals(v2a, new Uint8Array([1])); // First byte since we reset i
+
+		// Cancel first tee'd stream - it should throw because throwAfterCancel is inherited
+		await reader2a.cancel('First tee canceled');
+
+		// Should throw after cancel
+		let error: Error|undefined;
+		try
+		{	await reader2a.read();
+		}
+		catch (e)
+		{	error = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(error?.message, 'Stream was canceled');
+
+		// Second tee'd stream should still work independently
+		const {value: v2b} = await reader2b.read();
+		assertEquals(v2b, new Uint8Array([1])); // Gets the same byte that was read by reader2a (buffered by tee)
+
+		// Can continue reading from second stream
+		const {value: v3b} = await reader2b.read();
+		assertEquals(v3b, new Uint8Array([2]));
+
+		// Cancel second stream too
+		await reader2b.cancel('Second tee canceled');
+
+		// Should also throw after cancel
+		error = undefined;
+		try
+		{	await reader2b.read();
+		}
+		catch (e)
+		{	error = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(error?.message, 'Stream was canceled');
+	}
+);
+
+Deno.test
+(	'Reader: throwAfterCancel - after stream already closed',
+	async () =>
+	{	let dataLeft = true;
+
+		function read(view: Uint8Array)
+		{	if (!dataLeft)
+			{	return null;
+			}
+			dataLeft = false;
+			view[0] = 65;
+			return 1;
+		}
+
+		const rs = new RdStream({throwAfterCancel: true, read});
+		using reader = rs.getReader();
+
+		// Read all data
+		await reader.read();
+
+		// Read at EOF (stream closes normally)
+		const {done} = await reader.read();
+		assertEquals(done, true);
+
+		// Now cancel after it's already closed
+		await reader.cancel('Late cancel');
+
+		// Should still throw because cancel was called
+		let error: Error|undefined;
+		try
+		{	await reader.read();
+		}
+		catch (e)
+		{	error = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(error?.message, 'Stream was canceled');
 	}
 );
