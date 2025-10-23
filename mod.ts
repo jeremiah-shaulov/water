@@ -696,6 +696,6 @@
 	@summary water - Alternative to ReadableStream, WritableStream and TransformStream.
  **/
 
-export {RdStream, type Source, TooBigError, Reader} from './private/rd_stream.ts';
+export {RdStream, type Source, TooBigError, CancelError, Reader} from './private/rd_stream.ts';
 export {WrStream, type Sink, ClosedError, Writer} from './private/wr_stream.ts';
 export {TrStream, type Transformer} from './private/tr_stream.ts';

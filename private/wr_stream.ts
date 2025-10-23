@@ -5,6 +5,8 @@ export const _useLowLevelCallbacks = Symbol('_useLowLevelCallbacks');
 
 const textEncoder = new TextEncoder;
 
+/**	@category Errors
+ **/
 export class ClosedError extends TypeError
 {
 }

@@ -9,7 +9,15 @@ type Any = any;
 const _setWaitBeforeClose = Symbol('_setWaitBeforeClose');
 const _hackishReader = Reflect.ownKeys(new ReadableStream).find(k => k.toString().includes('[[reader]]'));
 
+/**	@category Errors
+ **/
 export class TooBigError extends Error
+{
+}
+
+/**	@category Errors
+ **/
+export class CancelError extends Error
 {
 }
 
@@ -675,7 +683,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	read<V extends ArrayBufferView>(view: V,  options?: {min?: number}): Promise<ItResultOpt<V>>;
 	async read<V extends ArrayBufferView>(view?: V,  options?: {min?: number}): Promise<ItResultOpt<V>>
 	{	if (this.throwAfterCancel && this.callbackAccessor?.isClosed!==false)
-		{	throw new Error('Stream was canceled');
+		{	throw new CancelError('Stream was canceled');
 		}
 		if (!view)
 		{	const view2 = await this.getCallbackAccessor().read();
