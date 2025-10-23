@@ -35,6 +35,12 @@ export type Source =
 	 **/
 	autoAllocateMin?: number;
 
+	/**	If this property is set to true, and the stream is canceled, an exception will be thrown on attempt to read from it.
+		This is different from standard behavior (observed on built-in ReadableStream objects).
+		The standard behavior is to return EOF on read after cancel.
+	 **/
+	throwAfterCancel?: boolean;
+
 	/**	This callback is called immediately during `RdStream` object creation.
 		When it's promise resolves, i start to call `read()` to pull data as response to `reader.read()`.
 		Only one call is active at each moment, and next calls wait for previous calls to complete.
@@ -266,6 +272,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 	// properties:
 
 	#callbackAccessor: ReadCallbackAccessor;
+	#throwAfterCancel: boolean;
 	#locked = false;
 	#readerRequests = new Array<(reader: (ReadableStreamDefaultReader<Uint8Array> | ReadableStreamBYOBReader) & Omit<Reader, 'read'>) => void>;
 
@@ -293,6 +300,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 		const autoAllocateMinU = source.autoAllocateMin;
 		const autoAllocateChunkSize = autoAllocateChunkSizeU && autoAllocateChunkSizeU>0 ? autoAllocateChunkSizeU : DEFAULT_AUTO_ALLOCATE_SIZE;
 		const autoAllocateMin = Math.min(autoAllocateChunkSize, autoAllocateMinU && autoAllocateMinU>0 ? autoAllocateMinU : Math.max(256, autoAllocateChunkSize >> 3));
+		const throwAfterCancel = source.throwAfterCancel === true;
 		const callbackAccessor =  new ReadCallbackAccessor(autoAllocateChunkSize, autoAllocateMin, source);
 		let hackishEnabled = false;
 		let buffer: Uint8Array<ArrayBuffer>|undefined;
@@ -323,6 +331,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 			}
 		);
 		this.#callbackAccessor = callbackAccessor;
+		this.#throwAfterCancel = throwAfterCancel;
 		// Once somebody assigns `_hackishReader` property to my object, i understand that the object is being used in a hackish way, so i enable `pull()` callback
 		if (_hackishReader)
 		{	const desc = Object.getOwnPropertyDescriptor(this, _hackishReader);
@@ -362,7 +371,8 @@ export class RdStream extends ReadableStream<Uint8Array>
 		}
 		this.#locked = true;
 		return new Reader
-		(	this.#callbackAccessor,
+		(	this.#throwAfterCancel,
+			this.#callbackAccessor,
 			() =>
 			{	this.#locked = false;
 				const y = this.#readerRequests.shift();
@@ -657,10 +667,17 @@ class ReadCallbackAccessor extends CallbackAccessor
 /**	This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.
  **/
 export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
-{	read(): Promise<ItResultOpt<Uint8Array>>;
+{	constructor(private throwAfterCancel: boolean, callbackAccessor: ReadCallbackAccessor|undefined, onRelease: VoidFunction)
+	{	super(callbackAccessor, onRelease);
+	}
+
+	read(): Promise<ItResultOpt<Uint8Array>>;
 	read<V extends ArrayBufferView>(view: V,  options?: {min?: number}): Promise<ItResultOpt<V>>;
 	async read<V extends ArrayBufferView>(view?: V,  options?: {min?: number}): Promise<ItResultOpt<V>>
-	{	if (!view)
+	{	if (this.throwAfterCancel && this.callbackAccessor?.isClosed!==false)
+		{	throw new Error('Stream was canceled');
+		}
+		if (!view)
 		{	const view2 = await this.getCallbackAccessor().read();
 			return {value: view2 as Any, done: !view2};
 		}
@@ -714,16 +731,19 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		this will cause a deadlock situation.
 	 **/
 	tee(options?: {requireParallelRead?: boolean}): [RdStream, RdStream]
-	{	const tee = options?.requireParallelRead ? new TeeRequireParallelRead(this) : new TeeRegular(this);
+	{	const {throwAfterCancel} = this;
+		const tee = options?.requireParallelRead ? new TeeRequireParallelRead(this) : new TeeRegular(this);
 
 		return [
 			new RdStream
-			(	{	read: view => tee.read(view, -1),
+			(	{	throwAfterCancel,
+					read: view => tee.read(view, -1),
 					cancel: reason => tee.cancel(reason, -1),
 				}
 			),
 			new RdStream
-			(	{	read: view => tee.read(view, +1),
+			(	{	throwAfterCancel,
+					read: view => tee.read(view, +1),
 					cancel: reason => tee.cancel(reason, +1),
 				}
 			),
