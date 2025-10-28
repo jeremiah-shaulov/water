@@ -161,7 +161,7 @@ function createTcpServer(handler: (conn: Deno.Conn) => Promise<void>, maxConns=1
 	};
 }
 
-async function connectWithRetry(port: number, nAttempts=10)
+async function connectWithRetry(port: number, nAttempts=20)
 {	for (let i=1; true; i++)
 	{	try
 		{	return await Deno.connect({port});
@@ -171,7 +171,7 @@ async function connectWithRetry(port: number, nAttempts=10)
 			{	throw e;
 			}
 			console.warn('Will retry failed connection', e);
-			await new Promise(y => setTimeout(y, i*20));
+			await new Promise(y => setTimeout(y, i*100));
 		}
 	}
 }
