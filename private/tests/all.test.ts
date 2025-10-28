@@ -161,6 +161,21 @@ function createTcpServer(handler: (conn: Deno.Conn) => Promise<void>, maxConns=1
 	};
 }
 
+async function connectWithRetry(port: number, nAttempts=10)
+{	for (let i=1; true; i++)
+	{	try
+		{	return await Deno.connect({port});
+		}
+		catch (e)
+		{	if (i >= nAttempts)
+			{	throw e;
+			}
+			console.warn('Will retry failed connection', e);
+			await new Promise(y => setTimeout(y, i*20));
+		}
+	}
+}
+
 class StringStreamer extends RdStream
 {	constructor(str='')
 	{	let data = textEncoder.encode(str);
@@ -1216,7 +1231,7 @@ Deno.test
 			await Promise.all
 			(	new Array(N_IN_PARALLEL).fill(0).map
 				(	async () =>
-					{	const fh = await Deno.connect({port: sender.port});
+					{	const fh = await connectWithRetry(sender.port);
 						const rs = a==0 ? fh.readable : a==1 ? RdStream.from(fh.readable) : new RdStream(fh);
 
 						const reader = rs.getReader({mode: 'byob'});
@@ -1279,7 +1294,7 @@ Deno.test
 			await Promise.all
 			(	new Array(N_IN_PARALLEL).fill(0).map
 				(	async () =>
-					{	const fh = await Deno.connect({port: sender.port});
+					{	const fh = await connectWithRetry(sender.port);
 						if (a == 0)
 						{	const rs = fh.readable.pipeThrough
 							(	new TransformStream
@@ -1380,7 +1395,7 @@ Deno.test
 				await writer.close();
 			}
 		);
-		const fh = await Deno.connect({port: sender.port});
+		const fh = await connectWithRetry(sender.port);
 		const rs = new RdStream(fh);
 		const parts = new Array<Uint8Array>;
 		while (true)
@@ -1438,7 +1453,7 @@ Deno.test
 					await ws.close();
 				}
 			);
-			const fh = await Deno.connect({port: sender.port});
+			const fh = await connectWithRetry(sender.port);
 			const rs: ReadableStream<Uint8Array> = a==0 ?
 				fh.readable :
 				new RdStream
@@ -1494,7 +1509,7 @@ Deno.test
 						await writer.close();
 					}
 				);
-				const fh = await Deno.connect({port: sender.port});
+				const fh = await connectWithRetry(sender.port);
 				const value = await new RdStream(a==0 ? fh : {read: v => fh.read(v), close: () => fh.close(), autoAllocateChunkSize: 100}).bytes();
 				for (let i=0; i<value.byteLength; i++)
 				{	if (value[i] != (i & 0xFF))
