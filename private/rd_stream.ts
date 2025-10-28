@@ -620,7 +620,12 @@ class ReadCallbackAccessor extends CallbackAccessor
 				}
 				let autoView: Uint8Array<ArrayBuffer>|undefined;
 				if (!view)
-				{	view = autoView = this.#autoAllocateBuffer ?? new Uint8Array(this.autoAllocateChunkSize);
+				{	// I reuse `autoAllocateBuffer`, and keep it not smaller than `autoAllocateMin`.
+					// However after i returned a part of it to the caller, i cannot guarantee that he will not transfer it's buffer.
+					// Transferring before the call to `read()` will not break anything, because here (below) i check the buffer length again.
+					// However transferring it in the middle of `read()` calls is dangerous.
+					// Maybe need to rethink the concept later.
+					view = autoView = this.#autoAllocateBuffer && this.#autoAllocateBuffer.length >= this.autoAllocateMin ? this.#autoAllocateBuffer : new Uint8Array(this.autoAllocateChunkSize);
 					this.#autoAllocateBuffer = undefined;
 				}
 				while (true)
@@ -679,8 +684,20 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	{	super(callbackAccessor, onRelease);
 	}
 
+	/**	Returns Uint8Array with the data, which is a view on some underlying buffer.
+		You can read and modify the returned part of the buffer.
+		However the other parts of the buffer can be reused in future `read()` calls.
+		This method doesn't transfer the underlying buffer.
+		You can safely transfer the whole underlying buffer of the returned part between calls to `read()`
+		(and in this case it will not be reused anymore), but not in the middle of `read()` calls.
+	 **/
 	read(): Promise<ItResultOpt<Uint8Array>>;
+
+	/**	Reads data to the provided `view`.
+		The view will **not** be transferred.
+	 **/
 	read<V extends ArrayBufferView>(view: V,  options?: {min?: number}): Promise<ItResultOpt<V>>;
+
 	async read<V extends ArrayBufferView>(view?: V,  options?: {min?: number}): Promise<ItResultOpt<V>>
 	{	if (this.throwAfterCancel && this.callbackAccessor?.isClosed!==false)
 		{	throw new CancelError('Stream was canceled');
