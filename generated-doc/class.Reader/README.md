@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Reader} from "jsr:@shaulov/water@1.1.0"
+import {Reader} from "jsr:@shaulov/water@1.1.1"
 ```
 
 This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` in `ReadableStream<Uint8Array>`.
@@ -58,9 +58,19 @@ This class plays the same role in `RdStream` as does `ReadableStreamBYOBReader` 
 
 #### ⚙ read(): Promise\<ItResultOpt\<Uint8Array\<ArrayBufferLike>>>
 
+> Returns Uint8Array with the data, which is a view on some underlying buffer.
+> You can read and modify the returned part of the buffer.
+> However the other parts of the buffer can be reused in future `read()` calls.
+> This method doesn't transfer the underlying buffer.
+> You can safely transfer the whole underlying buffer of the returned part between calls to `read()`
+> (and in this case it will not be reused anymore), but not in the middle of `read()` calls.
+
 
 
 #### ⚙ read\<V `extends` ArrayBufferView>(view: V, options?: \{min?: `number`}): Promise\<ItResultOpt\<V>>
+
+> Reads data to the provided `view`.
+> The view will **not** be transferred.
 
 
 

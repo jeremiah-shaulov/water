@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Transformer} from "jsr:@shaulov/water@1.1.0"
+import {Transformer} from "jsr:@shaulov/water@1.1.1"
 ```
 
 ## This type has

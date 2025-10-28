@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {CancelError} from "jsr:@shaulov/water@1.1.0"
+import {CancelError} from "jsr:@shaulov/water@1.1.1"
 ```
 
 ## This class has
