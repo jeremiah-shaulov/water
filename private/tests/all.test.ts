@@ -125,7 +125,7 @@ function writeToWrite(write: (chunk: Uint8Array) => number | Promise<number>)
 
 function createTcpServer(handler: (conn: Deno.Conn) => Promise<void>, maxConns=10)
 {	// Open TCP listener on random port
-	const listener = Deno.listen({transport: 'tcp', hostname: 'localhost', port: 0});
+	const listener = Deno.listen({transport: 'tcp', hostname: '127.0.0.1', port: 0});
 	// Figure out the port
 	const port = listener.addr.transport=='tcp' ? listener.addr.port : 0;
 	// Accept connections
