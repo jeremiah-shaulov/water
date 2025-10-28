@@ -2,8 +2,8 @@ name: Publish
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - '[0-9]+\.[0-9]+\.[0-9]+'
 
 jobs:
   publish:
@@ -13,5 +13,10 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Run tests
+        run: deno test --fail-fast --allow-all private/tests/all.test.ts
       - name: Publish package
-        run: npx jsr publish --allow-slow-types
+        run: deno publish --allow-slow-types
