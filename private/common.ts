@@ -126,7 +126,10 @@ export class CallbackAccessor
 		this.#reportClosed = undefined;
 		this.#reportClosedWithError = undefined;
 
-		if (waitBeforeClose)
+		// For normal close, await any pre-close work first (e.g., pipeTo from pipeThrough).
+		// For cancel/abort, run the user's cancel/abort callback first - it may interrupt upstream
+		// work that waitBeforeClose is waiting for, otherwise we'd deadlock.
+		if (waitBeforeClose && !isCancelOrAbort)
 		{	await waitBeforeClose; // must not throw (reject)
 		}
 
@@ -191,6 +194,16 @@ export class CallbackAccessor
 					}
 					catch (e)
 					{	this.error = e;
+					}
+				}
+				// After the cancel/abort callback ran (and presumably interrupted upstream work),
+				// wait for any pre-close promise to settle.
+				if (waitBeforeClose)
+				{	try
+					{	await waitBeforeClose;
+					}
+					catch
+					{	// must not throw, but be defensive
 					}
 				}
 			}

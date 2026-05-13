@@ -32,6 +32,12 @@ export type Transformer =
 	/**	At last, when the whole stream was transformed, this callback is called.
 	 **/
 	flush?(writer: Writer): void | PromiseLike<void>;
+
+	/**	Called when the readable side is canceled or the writable side is aborted.
+		After this callback runs, the writable side is aborted (which cancels the source in a pipe chain).
+		Matches the WHATWG Streams Standard `transformer.cancel` callback.
+	 **/
+	cancel?(reason: unknown): void | PromiseLike<void>;
 };
 
 const EMPTY_CHUNK: Uint8Array<ArrayBufferLike> = new Uint8Array;
@@ -85,8 +91,10 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 		const start = transformer?.start;
 		const transform = transformer?.transform ?? ((w, c) => w.write(c).then(() => c.byteLength));
 		const flush = transformer?.flush;
+		const cancel = transformer?.cancel;
 		let currentChunk = EMPTY_CHUNK;
 		let currentChunkResolve: ((n: number) => void) | undefined;
+		let currentChunkReject: ((reason: Any) => void) | undefined;
 		let currentViewResolve: ((n: number) => void) | undefined;
 		let currentViewReject: ((reason: Any) => void) | undefined;
 		let isEof = false;
@@ -100,7 +108,10 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 		const writer = new Writer
 		(	new WriteCallbackAccessor
 			(	{	write(chunk)
-					{	if (currentViewResolve)
+					{	if (isEof)
+						{	throw error ?? new Error('Transform stream is closed');
+						}
+						if (currentViewResolve)
 						{	const n = Math.min(currentChunk.byteLength, chunk.byteLength);
 							currentChunk.set(chunk.subarray(0, n));
 							currentViewResolve(n);
@@ -110,7 +121,7 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 						}
 						else
 						{	currentChunk = chunk;
-							return new Promise(y => {currentChunkResolve = y});
+							return new Promise((y, n) => {currentChunkResolve = y; currentChunkReject = n;});
 						}
 					},
 
@@ -122,19 +133,24 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 						currentViewResolve?.(0);
 						currentViewResolve = undefined;
 						currentViewReject = undefined;
+						currentChunkResolve = undefined;
+						currentChunkReject = undefined;
 						await this.writable[_closeEvenIfLocked]();
 					},
 
 					abort: async reason =>
 					{	// `transform()` called `writer.abort()`
-						await this.writable.abort(reason);
 						isError = true;
 						error = reason;
 						isEof = true;
 						currentChunk = EMPTY_CHUNK;
-						currentViewReject?.(error);
+						currentViewReject?.(reason);
 						currentViewResolve = undefined;
 						currentViewReject = undefined;
+						currentChunkReject?.(reason);
+						currentChunkResolve = undefined;
+						currentChunkReject = undefined;
+						await this.writable.abort(reason);
 					},
 				},
 				true
@@ -150,6 +166,9 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 				currentViewReject?.(error);
 				currentViewResolve = undefined;
 				currentViewReject = undefined;
+				currentChunkReject?.(error);
+				currentChunkResolve = undefined;
+				currentChunkReject = undefined;
 			}
 		);
 
@@ -204,6 +223,9 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 				currentViewReject?.(reason);
 				currentViewResolve = undefined;
 				currentViewReject = undefined;
+				currentChunkReject?.(reason);
+				currentChunkResolve = undefined;
+				currentChunkReject = undefined;
 			}
 		}
 
@@ -269,7 +291,7 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 
 		// Consumer will read from here the transformed stream
 		this.readable = new RdStream
-		(	{	read(view)
+		(	{	read: view =>
 				{	if (isEof)
 					{	if (isError)
 						{	throw error ?? new Error('Stream aborted');
@@ -286,6 +308,35 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 					else
 					{	currentChunk = view;
 						return new Promise((y, n) => {currentViewResolve=y; currentViewReject=n});
+					}
+				},
+				cancel: async reason =>
+				{	// Downstream consumer canceled the readable side: propagate upstream by aborting the writable side.
+					// Per WHATWG Streams Standard: this also invokes the optional `transformer.cancel` callback.
+					if (cancel)
+					{	try
+						{	await cancel(reason);
+						}
+						catch
+						{	// Ignore: cancel callback errors don't propagate further
+						}
+					}
+					isError = true;
+					error = reason;
+					isEof = true;
+					currentChunk = EMPTY_CHUNK;
+					currentViewReject?.(reason);
+					currentViewResolve = undefined;
+					currentViewReject = undefined;
+					// Unblock any pending transform() that is waiting for the consumer to read.
+					currentChunkReject?.(reason);
+					currentChunkResolve = undefined;
+					currentChunkReject = undefined;
+					try
+					{	await this.writable.abort(reason);
+					}
+					catch
+					{	// Ignore
 					}
 				}
 			}

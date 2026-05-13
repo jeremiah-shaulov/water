@@ -874,14 +874,33 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			if (writeError)
 			{	throw writeError.error;
 			}
-			if (isEof !== false)
-			{	callbackAccessor.dropPiper(curPiper);
-				if (options?.preventClose)
-				{	await callbackAccessor.close();
+			if (isEof !== true)
+			{	// Piper did not reach a normal EOF (returned `false`, or accessor was canceled mid-call → `undefined`).
+				// Distinguish:
+				//  - Writer closed normally (e.g., transform called writer.close()): keep source alive for reuse.
+				//  - Writer aborted/errored externally: cancel the source per spec.
+				let writerClosedOk = false;
+				let reason: unknown;
+				try
+				{	await writer.closed;
+					writerClosedOk = true;
 				}
-				else
-				{	await Promise.all([callbackAccessor.close(), writer.close()]);
+				catch (e)
+				{	reason = e;
 				}
+				if (!writerClosedOk)
+				{	writeError = {error: reason ?? new TypeError('Destination stream closed before source EOF')};
+					throw writeError.error;
+				}
+				// Writer was closed normally; pipeTo ends here, don't close source.
+				return;
+			}
+			callbackAccessor.dropPiper(curPiper);
+			if (options?.preventClose)
+			{	await callbackAccessor.close();
+			}
+			else
+			{	await Promise.all([callbackAccessor.close(), writer.close()]);
 			}
 		}
 		catch (e)

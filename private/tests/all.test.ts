@@ -2279,6 +2279,48 @@ Deno.test
 );
 
 Deno.test
+(	'TrStream: cancel readable side propagates upstream to source',
+	async () =>
+	{	let n = 0;
+		let sourceCancelled = false;
+		// Use an ASYNC read so pipeTo can't drain everything synchronously before cancel fires
+		const rs = new RdStream
+		(	{	async read(v)
+				{	await new Promise(y => setTimeout(y, 5));
+					if (n++ > 1000) return 0;
+					v[0] = 1;
+					return 1;
+				},
+				cancel() {sourceCancelled = true;}
+			}
+		);
+		const tr = new TrStream;
+		const piped = rs.pipeThrough(tr);
+		const reader = piped.getReader();
+		await reader.read();
+		await reader.cancel('downstream-cancel');
+		await new Promise(y => setTimeout(y, 50));
+		assertEquals(sourceCancelled, true, 'source should be canceled when downstream consumer cancels');
+	}
+);
+
+Deno.test
+(	'TrStream: standalone readable.cancel() does not hang',
+	async () =>
+	{	const tr = new TrStream;
+		let timer: number|undefined;
+		let resolved = false;
+		await Promise.race
+		(	[	tr.readable.cancel('hi').then(() => {resolved = true}),
+				new Promise<void>(y => {timer = setTimeout(y, 500);})
+			]
+		);
+		if (timer !== undefined) clearTimeout(timer);
+		assertEquals(resolved, true, 'readable.cancel() must resolve, not hang');
+	}
+);
+
+Deno.test
 (	'for await...of break does not surface errors from source.cancel()',
 	async () =>
 	{	let n = 0;
