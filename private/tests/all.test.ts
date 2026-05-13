@@ -2279,6 +2279,49 @@ Deno.test
 );
 
 Deno.test
+(	'RdStream.from(ReadableStream): BYOB branch can serve reads larger than 32 KiB in one call',
+	async () =>
+	{	const big = new Uint8Array(200 * 1024); // 200 KiB
+		for (let i=0; i<big.byteLength; i++)
+		{	big[i] = i & 0xFF;
+		}
+		const underlyingSource: UnderlyingByteSource =
+		{	type: 'bytes',
+			pull(controller)
+			{	const view = controller.byobRequest?.view;
+				if (view)
+				{	const n = Math.min(view.byteLength, big.byteLength);
+					new Uint8Array(view.buffer, view.byteOffset, n).set(big.subarray(0, n));
+					controller.byobRequest!.respond(n);
+					if (n >= big.byteLength)
+					{	controller.close();
+					}
+					else
+					{	// shouldn't happen in this test
+					}
+				}
+				else
+				{	controller.enqueue(big);
+					controller.close();
+				}
+			}
+		};
+		const source = new ReadableStream(underlyingSource);
+		const rs = RdStream.from(source);
+		const reader = rs.getReader({mode: 'byob'});
+		try
+		{	const big2 = new Uint8Array(150 * 1024); // request 150 KiB
+			const {value} = await reader.read(big2);
+			// Bug: was capped to 32 KiB; the test fails until larger views are honored
+			assert((value as Uint8Array).byteLength > 32 * 1024);
+		}
+		finally
+		{	reader.releaseLock();
+		}
+	}
+);
+
+Deno.test
 (	'Writer.ready: rejects with TypeError after releaseLock()',
 	async () =>
 	{	const wr = new WrStream({write: c => c.byteLength});

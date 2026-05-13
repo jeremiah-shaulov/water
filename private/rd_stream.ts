@@ -137,10 +137,13 @@ export class RdStream extends ReadableStream<Uint8Array>
 							{	// Try BYOB
 								const reader = source.getReader({mode: 'byob'});
 								readerInUse = reader;
-								let buffer = new Uint8Array(DEFAULT_AUTO_ALLOCATE_SIZE);
+								let buffer = new Uint8Array;
 								innerRead = async view =>
 								{	try
-									{	const {value, done} = await reader.read(buffer.subarray(0, Math.min(view.byteLength, buffer.byteLength)));
+									{	if (view.byteLength > buffer.byteLength)
+										{	buffer = new Uint8Array(view.byteLength);
+										}
+										const {value, done} = await reader.read(buffer.subarray(0, view.byteLength));
 										if (done)
 										{	reader.releaseLock();
 										}
