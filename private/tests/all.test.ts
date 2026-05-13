@@ -2279,6 +2279,38 @@ Deno.test
 );
 
 Deno.test
+(	'pipeTo(): cancels the source when destination errors',
+	async () =>
+	{	let nCancel = 0;
+		let cancelReason: unknown;
+		let nReads = 0;
+		const rs = new RdStream
+		(	{	read(v)
+				{	nReads++;
+					v[0] = nReads & 0xFF;
+					if (nReads > 100)
+					{	return 0;
+					}
+					return 1;
+				},
+				cancel(reason)
+				{	nCancel++;
+					cancelReason = reason;
+				}
+			}
+		);
+		const ws = new WrStream({write() {throw new Error('sink-fail');}});
+		let rejection: unknown;
+		await rs.pipeTo(ws).then(() => {}, e => {rejection = e});
+		assert(rejection instanceof Error);
+		assertEquals((rejection as Error).message, 'sink-fail');
+		assertEquals(nCancel, 1);
+		assert(cancelReason instanceof Error);
+		assertEquals((cancelReason as Error).message, 'sink-fail');
+	}
+);
+
+Deno.test
 (	'Writer.close(): second call rejects with TypeError (stream already closed)',
 	async () =>
 	{	const ws = new WrStream({write: c => c.byteLength});

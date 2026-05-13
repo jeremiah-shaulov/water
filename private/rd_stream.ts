@@ -814,6 +814,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 		const writer = dest.getWriter();
 		const signal = options?.signal;
 		let onAbort: (() => void) | undefined;
+		let writeError: {error: unknown} | undefined;
 		try
 		{	if (signal)
 			{	if (signal.aborted)
@@ -823,35 +824,44 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 				signal.addEventListener('abort', onAbort);
 			}
 			const curPiper = callbackAccessor.getOrCreatePiper();
+			// Capture write errors locally so they don't get cascaded into the read-side accessor
+			// (which would mark the source as errored and skip calling source.cancel()).
 			const isEof = await callbackAccessor.useCallbacks
 			(	callbacksForRead =>
-				{	if (writer instanceof Writer)
-					{	return writer[_useLowLevelCallbacks]
-						(	callbacksForWrite => curPiper.pipeTo
+				{	const innerPromise = writer instanceof Writer
+						? writer[_useLowLevelCallbacks]
+							(	callbacksForWrite => curPiper.pipeTo
+								(	writer.closed,
+									callbacksForRead,
+									(chunk, canReturnZero) =>
+									{	const resultOrPromise = callbacksForWrite.write!(chunk, canReturnZero);
+										if (typeof(resultOrPromise) != 'object')
+										{	return -resultOrPromise - 1;
+										}
+										return resultOrPromise.then(result => -result - 1);
+									}
+								)
+							)
+						: curPiper.pipeTo
 							(	writer.closed,
 								callbacksForRead,
-								(chunk, canReturnZero) =>
-								{	const resultOrPromise = callbacksForWrite.write!(chunk, canReturnZero);
-									if (typeof(resultOrPromise) != 'object')
-									{	return -resultOrPromise - 1;
-									}
-									return resultOrPromise.then(result => -result - 1);
+								async chunk =>
+								{	await writer.write(chunk);
+									return -chunk.byteLength - 1;
 								}
-							)
-						);
-					}
-					else
-					{	return curPiper.pipeTo
-						(	writer.closed,
-							callbacksForRead,
-							async chunk =>
-							{	await writer.write(chunk);
-								return -chunk.byteLength - 1;
-							}
-						);
-					}
+							);
+					return Promise.resolve(innerPromise).then
+					(	v => v,
+						e =>
+						{	writeError = {error: e};
+							return false; // signal non-EOF; the outer code will throw writeError.error
+						}
+					);
 				}
 			);
+			if (writeError)
+			{	throw writeError.error;
+			}
 			if (isEof !== false)
 			{	callbackAccessor.dropPiper(curPiper);
 				if (options?.preventClose)
@@ -863,16 +873,16 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			}
 		}
 		catch (e)
-		{	if (callbackAccessor.error !== undefined)
-			{	// Read error
-				if (!options?.preventAbort)
-				{	await writer.abort(e);
+		{	if (writeError)
+			{	// Write error - cancel the source
+				if (!options?.preventCancel)
+				{	await this.cancel(e);
 				}
 			}
 			else
-			{	// Write error
-				if (!options?.preventCancel)
-				{	await this.cancel(e);
+			{	// Read error (or signal abort) - abort the destination
+				if (!options?.preventAbort)
+				{	await writer.abort(e);
 				}
 			}
 			throw e;
