@@ -2279,6 +2279,32 @@ Deno.test
 );
 
 Deno.test
+(	'for await...of break does not surface errors from source.cancel()',
+	async () =>
+	{	let n = 0;
+		const rs = new RdStream
+		(	{	read(v) {if (n++ > 20) return 0; v[0] = n; return 1;},
+				cancel() {throw new Error('cancel-fail');},
+				catch() {/* swallow */}
+			}
+		);
+		// Break out of for-await — iterator should not surface the cancel error
+		let surfaced: Error|undefined;
+		try
+		{	for await (const chunk of rs)
+			{	if (chunk[0] >= 3) break;
+			}
+		}
+		catch (e)
+		{	surfaced = e instanceof Error ? e : new Error(e+'');
+		}
+		// Give microtasks a chance to surface any unhandled rejection
+		await new Promise(y => setTimeout(y, 10));
+		assertEquals(surfaced, undefined, `for-await break should not surface cancel errors, got: ${surfaced?.message}`);
+	}
+);
+
+Deno.test
 (	'pipeTo(): signal abort cancels the source as well as aborting the destination',
 	async () =>
 	{	let pos = 0;

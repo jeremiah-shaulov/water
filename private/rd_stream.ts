@@ -1066,7 +1066,11 @@ class ReadableStreamIterator implements AsyncIterableIterator<Uint8Array>
 	[Symbol.dispose]()
 	{	try
 		{	if (!this.preventCancel)
-			{	this.reader.cancel();
+			{	// Swallow cancel rejection: `for await ... break` should not surface errors from source.cancel().
+				const cancelPromise = this.reader.cancel();
+				if (cancelPromise && typeof cancelPromise.then === 'function')
+				{	cancelPromise.then(undefined, () => {});
+				}
 			}
 		}
 		finally
