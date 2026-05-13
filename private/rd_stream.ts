@@ -786,13 +786,15 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	async pipeTo(dest: WritableStream<Uint8Array>, options?: StreamPipeOptionsLocal)
 	{	const callbackAccessor = this.getCallbackAccessor();
 		const writer = dest.getWriter();
+		const signal = options?.signal;
+		let onAbort: (() => void) | undefined;
 		try
-		{	const signal = options?.signal;
-			if (signal)
+		{	if (signal)
 			{	if (signal.aborted)
 				{	throw signal.reason;
 				}
-				signal.addEventListener('abort', () => {writer.abort(signal.reason)});
+				onAbort = () => {writer.abort(signal.reason)};
+				signal.addEventListener('abort', onAbort);
 			}
 			const curPiper = callbackAccessor.getOrCreatePiper();
 			const isEof = await callbackAccessor.useCallbacks
@@ -850,7 +852,10 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			throw e;
 		}
 		finally
-		{	writer.releaseLock();
+		{	if (onAbort)
+			{	signal!.removeEventListener('abort', onAbort);
+			}
+			writer.releaseLock();
 		}
 	}
 

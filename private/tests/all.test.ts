@@ -2279,6 +2279,58 @@ Deno.test
 );
 
 Deno.test
+(	'pipeTo(): does not leak abort listeners when the same signal is reused',
+	async () =>
+	{	const ac = new AbortController;
+		let added = 0;
+		let removed = 0;
+		const origAdd = ac.signal.addEventListener.bind(ac.signal);
+		const origRemove = ac.signal.removeEventListener.bind(ac.signal);
+		Object.defineProperty
+		(	ac.signal,
+			'addEventListener',
+			// deno-lint-ignore no-explicit-any
+			{	value: (type: string, listener: any, opts?: any) =>
+				{	if (type === 'abort')
+					{	added++;
+					}
+					return origAdd(type, listener, opts);
+				}
+			}
+		);
+		Object.defineProperty
+		(	ac.signal,
+			'removeEventListener',
+			// deno-lint-ignore no-explicit-any
+			{	value: (type: string, listener: any, opts?: any) =>
+				{	if (type === 'abort')
+					{	removed++;
+					}
+					return origRemove(type, listener, opts);
+				}
+			}
+		);
+		for (let i=0; i<5; i++)
+		{	let n = 0;
+			const rs = new RdStream
+			(	{	read(v)
+					{	if (n++ > 0)
+						{	return 0;
+						}
+						v[0] = 1;
+						return 1;
+					}
+				}
+			);
+			const ws = new WrStream({write: c => c.byteLength});
+			await rs.pipeTo(ws, {signal: ac.signal});
+		}
+		// All listeners that were added should also be removed once the pipe finishes
+		assertEquals(added - removed, 0);
+	}
+);
+
+Deno.test
 (	'RdStream.from(): empty Uint8Array chunk must not terminate the stream (sync iterable)',
 	async () =>
 	{	function* gen()
