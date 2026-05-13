@@ -2279,6 +2279,28 @@ Deno.test
 );
 
 Deno.test
+(	'Reader.cancel(): returns rejected promise after releaseLock() (not throws)',
+	async () =>
+	{	const rs = new RdStream({read(v) {v[0]=1; return 1;}, cancel() {}});
+		const reader = rs.getReader();
+		reader.releaseLock();
+		let threwSync: Error|undefined;
+		let returned: Promise<void>|undefined;
+		try
+		{	returned = reader.cancel('x');
+		}
+		catch (e)
+		{	threwSync = e instanceof Error ? e : new Error(e+'');
+		}
+		assertEquals(threwSync, undefined);
+		assert(returned instanceof Promise);
+		let rejection: unknown;
+		await returned!.then(() => {}, e => {rejection = e});
+		assert(rejection instanceof TypeError);
+	}
+);
+
+Deno.test
 (	'Reader.read(): accepts any ArrayBufferView, not only Uint8Array',
 	async () =>
 	{	let n = 0;

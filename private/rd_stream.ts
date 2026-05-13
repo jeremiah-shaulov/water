@@ -746,7 +746,10 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	}
 
 	cancel(reason?: unknown)
-	{	return this.getCallbackAccessor().close(true, reason);
+	{	if (!this.callbackAccessor)
+		{	return Promise.reject(new TypeError('Reader or writer has no associated stream.'));
+		}
+		return this.callbackAccessor.close(true, reason);
 	}
 
 	/**	Push chunk to the stream, so next read will get it.
