@@ -2279,6 +2279,20 @@ Deno.test
 );
 
 Deno.test
+(	'Writer.flush(): rejects after close()',
+	async () =>
+	{	let flushCalled = false;
+		const ws = new WrStream({write: c => c.byteLength, flush() {flushCalled = true;}});
+		const writer = ws.getWriter();
+		await writer.close();
+		let rejection: unknown;
+		await writer.flush().then(() => {}, e => {rejection = e});
+		assert(rejection instanceof TypeError);
+		assertEquals(flushCalled, false);
+	}
+);
+
+Deno.test
 (	'Writer.closed: rejects with abort reason after WrStream.abort()',
 	async () =>
 	{	const ws = new WrStream({write: c => c.byteLength, abort() {}});

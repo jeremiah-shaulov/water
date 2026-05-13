@@ -307,7 +307,11 @@ export class Writer extends ReaderOrWriter<WriteCallbackAccessor>
 	}
 
 	async flush()
-	{	await this.getCallbackAccessor().useCallbacks(callbacks => callbacks.flush?.());
+	{	const cb = this.getCallbackAccessor();
+		if (cb.isClosed)
+		{	throw new TypeError('Writable stream is closed or errored.');
+		}
+		await cb.useCallbacks(callbacks => callbacks.flush?.());
 	}
 
 	close(): Promise<void>
