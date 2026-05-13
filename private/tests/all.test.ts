@@ -2279,6 +2279,24 @@ Deno.test
 );
 
 Deno.test
+(	'Source.read() returning more than view.byteLength must be rejected',
+	async () =>
+	{	let n = 0;
+		const rs = new RdStream
+		(	{	read(v)
+				{	if (n++ > 0) return 0;
+					v[0] = 1; v[1] = 2; v[2] = 3; v[3] = 4; v[4] = 5;
+					return v.byteLength + 100; // lie about how much we wrote
+				}
+			}
+		);
+		let rejection: unknown;
+		await rs.bytes().then(() => {}, e => {rejection = e});
+		assert(rejection instanceof Error, 'expected an error when read() returns oversized count');
+	}
+);
+
+Deno.test
 (	'Writer.flush(): rejects after close()',
 	async () =>
 	{	let flushCalled = false;

@@ -632,7 +632,11 @@ class ReadCallbackAccessor extends CallbackAccessor
 					this.#autoAllocateBuffer = undefined;
 				}
 				while (true)
-				{	const nRead = await callbacks.read!(view.subarray(nFilled));
+				{	const askedLen = view.byteLength - nFilled;
+					const nRead = await callbacks.read!(view.subarray(nFilled));
+					if (nRead != null && (!Number.isInteger(nRead) || nRead < 0 || nRead > askedLen))
+					{	throw new Error(`read() returned invalid byte count: ${nRead} (asked for up to ${askedLen})`);
+					}
 					if (autoView)
 					{	const end = view.byteOffset + (nRead ?? 0);
 						if (view.buffer.byteLength-end >= this.autoAllocateMin)
@@ -946,7 +950,11 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 				while (true)
 				{	let chunk = new Uint8Array(chunkSize);
 					while (chunk.byteLength >= autoAllocateMin)
-					{	const nRead = await callbacks.read!(chunk);
+					{	const askedLen = chunk.byteLength;
+						const nRead = await callbacks.read!(chunk);
+						if (nRead != null && (!Number.isInteger(nRead) || nRead < 0 || nRead > askedLen))
+						{	throw new Error(`read() returned invalid byte count: ${nRead} (asked for up to ${askedLen})`);
+						}
 						if (!nRead)
 						{	await callbackAccessor.close();
 							const {byteOffset} = chunk;
