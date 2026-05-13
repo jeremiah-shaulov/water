@@ -236,26 +236,27 @@ export class WriteCallbackAccessor extends CallbackAccessor
 	{	if (chunk.byteLength > 0)
 		{	const result = this.useCallbacks
 			(	callbacks =>
-				{	while (chunk.byteLength > 0)
-					{	const resultOrPromise = callbacks.write!(chunk, false);
+				{	const validate = (nWritten: number, askedLen: number) =>
+					{	if (!Number.isInteger(nWritten) || nWritten <= 0 || nWritten > askedLen)
+						{	throw new Error(`write() returned invalid byte count: ${nWritten} (asked to write ${askedLen})`);
+						}
+					};
+					while (chunk.byteLength > 0)
+					{	const askedLen = chunk.byteLength;
+						const resultOrPromise = callbacks.write!(chunk, false);
 						if (typeof(resultOrPromise) == 'number')
-						{	if (resultOrPromise == 0)
-							{	throw new Error('write() returned 0 during writeAll()');
-							}
+						{	validate(resultOrPromise, askedLen);
 							chunk = chunk.subarray(resultOrPromise);
 						}
 						else
 						{	return resultOrPromise.then
 							(	async nWritten =>
-								{	if (nWritten == 0)
-									{	throw new Error('write() returned 0 during writeAll()');
-									}
+								{	validate(nWritten, askedLen);
 									chunk = chunk.subarray(nWritten);
 									while (chunk.byteLength > 0)
-									{	nWritten = await callbacks.write!(chunk, false);
-										if (nWritten == 0)
-										{	throw new Error('write() returned 0 during writeAll()');
-										}
+									{	const askedLen2 = chunk.byteLength;
+										nWritten = await callbacks.write!(chunk, false);
+										validate(nWritten, askedLen2);
 										chunk = chunk.subarray(nWritten);
 									}
 									return true;

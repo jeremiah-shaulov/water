@@ -2279,6 +2279,26 @@ Deno.test
 );
 
 Deno.test
+(	'Sink.write() returning more than chunk.byteLength must be rejected',
+	async () =>
+	{	const ws = new WrStream({write(c) {return c.byteLength + 100;}});
+		let rejection: unknown;
+		await ws.write(new Uint8Array([1, 2, 3])).then(() => {}, e => {rejection = e});
+		assert(rejection instanceof Error, 'expected an error when write() returns oversized count');
+	}
+);
+
+Deno.test
+(	'Sink.write() returning negative must be rejected',
+	async () =>
+	{	const ws = new WrStream({write() {return -1;}});
+		let rejection: unknown;
+		await ws.write(new Uint8Array([1])).then(() => {}, e => {rejection = e});
+		assert(rejection instanceof Error, 'expected an error when write() returns negative count');
+	}
+);
+
+Deno.test
 (	'Source.read() returning more than view.byteLength must be rejected',
 	async () =>
 	{	let n = 0;
