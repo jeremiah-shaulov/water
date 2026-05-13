@@ -824,7 +824,15 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			{	if (signal.aborted)
 				{	throw signal.reason;
 				}
-				onAbort = () => {writer.abort(signal.reason)};
+				onAbort = () =>
+				{	// Per spec: abort destination AND cancel source on signal abort
+					if (!options?.preventAbort)
+					{	writer.abort(signal.reason);
+					}
+					if (!options?.preventCancel)
+					{	this.cancel(signal.reason);
+					}
+				};
 				signal.addEventListener('abort', onAbort);
 			}
 			const curPiper = callbackAccessor.getOrCreatePiper();

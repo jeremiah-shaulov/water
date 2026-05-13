@@ -2279,6 +2279,35 @@ Deno.test
 );
 
 Deno.test
+(	'pipeTo(): signal abort cancels the source as well as aborting the destination',
+	async () =>
+	{	let pos = 0;
+		let sourceCancelled = false;
+		const rs = new RdStream
+		(	{	async read(v)
+				{	await new Promise(y => setTimeout(y, 5));
+					if (pos > 50) return 0;
+					v[0] = pos++;
+					return 1;
+				},
+				cancel() {sourceCancelled = true;}
+			}
+		);
+		let destAborted = false;
+		const ws = new WrStream({write: c => c.byteLength, abort() {destAborted = true;}});
+		const ac = new AbortController;
+		const pipePromise = rs.pipeTo(ws, {signal: ac.signal});
+		const t = setTimeout(() => ac.abort(new Error('user-abort')), 20);
+		let rejection: unknown;
+		await pipePromise.then(() => {}, e => {rejection = e});
+		clearTimeout(t);
+		assert(rejection instanceof Error);
+		assertEquals(destAborted, true);
+		assertEquals(sourceCancelled, true, 'source should be canceled when signal aborts');
+	}
+);
+
+Deno.test
 (	'Sink.write() returning more than chunk.byteLength must be rejected',
 	async () =>
 	{	const ws = new WrStream({write(c) {return c.byteLength + 100;}});
