@@ -282,7 +282,10 @@ export class Writer extends ReaderOrWriter<WriteCallbackAccessor>
 	}
 
 	get ready()
-	{	return this.callbackAccessor?.ready ?? Promise.resolve(undefined);
+	{	if (!this.callbackAccessor)
+		{	return Promise.reject(new TypeError('Reader or writer has no associated stream.'));
+		}
+		return this.callbackAccessor.ready;
 	}
 
 	/**	Writes the chunk by calling `sink.write()`
