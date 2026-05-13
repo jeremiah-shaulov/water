@@ -2279,6 +2279,32 @@ Deno.test
 );
 
 Deno.test
+(	'WrStream.close(): returns rejected promise when locked (not throws)',
+	async () =>
+	{	const wr = new WrStream({write: c => c.byteLength});
+		const writer = wr.getWriter();
+		try
+		{	let returned: Promise<void>|undefined;
+			let threwSync: Error|undefined;
+			try
+			{	returned = wr.close();
+			}
+			catch (e)
+			{	threwSync = e instanceof Error ? e : new Error(e+'');
+			}
+			assertEquals(threwSync, undefined);
+			assert(returned instanceof Promise);
+			let rejection: unknown;
+			await returned!.then(() => {}, e => {rejection = e});
+			assert(rejection instanceof TypeError);
+		}
+		finally
+		{	writer.releaseLock();
+		}
+	}
+);
+
+Deno.test
 (	'pipeTo(): does not leak abort listeners when the same signal is reused',
 	async () =>
 	{	const ac = new AbortController;

@@ -162,7 +162,7 @@ export class WrStreamInternal extends WritableStream<Uint8Array>
 	 **/
 	override close()
 	{	if (this.#locked)
-		{	throw new TypeError('WritableStream is locked.');
+		{	return Promise.reject(new TypeError('WritableStream is locked.'));
 		}
 		return this.#callbackAccessor.close();
 	}
