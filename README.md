@@ -1,6 +1,6 @@
 <!--
 	This file is generated with the following command:
-	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.57/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/1.1.1/README.md --importUrl=jsr:@shaulov/water@1.1.1 mod.ts
+	deno run --allow-all https://raw.githubusercontent.com/jeremiah-shaulov/tsa/v0.0.57/tsa.ts doc-md --outFile=README.md --outUrl=https://raw.githubusercontent.com/jeremiah-shaulov/water/1.2.0/README.md --importUrl=jsr:@shaulov/water@1.2.0 mod.ts
 -->
 
 # water - Alternative to ReadableStream, WritableStream and TransformStream.
@@ -111,10 +111,10 @@ Additional features:
 ## Exported classes and types
 
 ```ts
-import {RdStream, Source} from 'jsr:@shaulov/water@1.1.1';
-import {WrStream, Sink} from 'jsr:@shaulov/water@1.1.1';
-import {TrStream, Transformer} from 'jsr:@shaulov/water@1.1.1';
-import {TooBigError} from 'jsr:@shaulov/water@1.1.1';
+import {RdStream, Source} from 'jsr:@shaulov/water@1.2.0';
+import {WrStream, Sink} from 'jsr:@shaulov/water@1.2.0';
+import {TrStream, Transformer} from 'jsr:@shaulov/water@1.2.0';
+import {TooBigError} from 'jsr:@shaulov/water@1.2.0';
 ```
 
 - [RdStream](generated-doc/class.RdStream/README.md)
@@ -173,7 +173,7 @@ const rdStream = new RdStream({read: p => Deno.stdin.read(p)});
 The following example demonstrates readable stream that streams the string provided to it's constructor.
 
 ```ts
-import {RdStream} from 'jsr:@shaulov/water@1.1.1';
+import {RdStream} from 'jsr:@shaulov/water@1.2.0';
 
 const textEncoder = new TextEncoder;
 
@@ -408,7 +408,7 @@ This class extends [WritableStream](https://developer.mozilla.org/en-US/docs/Web
 #### Example
 
 ```ts
-import {WrStream} from 'jsr:@shaulov/water@1.1.1';
+import {WrStream} from 'jsr:@shaulov/water@1.2.0';
 
 const EMPTY_CHUNK = new Uint8Array;
 
@@ -542,7 +542,7 @@ The following example demonstrates [TrStream](generated-doc/class.TrStream/READM
 and converts ASCII CR and LF to `\r` and `\n` respectively.
 
 ```ts
-import {RdStream, TrStream} from 'jsr:@shaulov/water@1.1.1';
+import {RdStream, TrStream} from 'jsr:@shaulov/water@1.2.0';
 
 // StringStreamer:
 
@@ -643,7 +643,7 @@ The output stream that `pipeThrough()` produces will terminate, but then it's po
 with second `pipeThrough()` or `pipeTo()`, or just to read it with `text()`.
 
 ```ts
-import {RdStream, WrStream, TrStream} from 'jsr:@shaulov/water@1.1.1';
+import {RdStream, WrStream, TrStream} from 'jsr:@shaulov/water@1.2.0';
 
 // StringStreamer:
 
@@ -713,6 +713,7 @@ console.log('\nRest: '+await tokens.text());
 > &nbsp; &nbsp; ⚙ [start](generated-doc/type.Transformer/README.md#-startwriter-writer-void--promiselikevoid)?(writer: [Writer](generated-doc/class.Writer/README.md)): `void` | PromiseLike\<`void`><br>
 > &nbsp; &nbsp; ⚙ [transform](generated-doc/type.Transformer/README.md#-transformwriter-writer-chunk-uint8array-canreturnzero-boolean-number--promiselikenumber)?(writer: [Writer](generated-doc/class.Writer/README.md), chunk: Uint8Array, canReturnZero: `boolean`): `number` | PromiseLike\<`number`><br>
 > &nbsp; &nbsp; ⚙ [flush](generated-doc/type.Transformer/README.md#-flushwriter-writer-void--promiselikevoid)?(writer: [Writer](generated-doc/class.Writer/README.md)): `void` | PromiseLike\<`void`><br>
+> &nbsp; &nbsp; ⚙ [cancel](generated-doc/type.Transformer/README.md#-cancelreason-unknown-void--promiselikevoid)?(reason: `unknown`): `void` | PromiseLike\<`void`><br>
 > }
 
 #### Properties:

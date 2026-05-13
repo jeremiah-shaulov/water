@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Writer} from "jsr:@shaulov/water@1.1.1"
+import {Writer} from "jsr:@shaulov/water@1.2.0"
 ```
 
 ## This class has
@@ -11,7 +11,7 @@ import {Writer} from "jsr:@shaulov/water@1.1.1"
 - [constructor](#-constructorcallbackaccessor-somecallbackaccessor--undefined-onrelease-voidfunction)
 - 2 properties:
 [desiredSize](#-get-desiredsize-number),
-[ready](#-get-ready-promiseany)
+[ready](#-get-ready-promiseundefined)
 - 4 methods:
 [write](#-writechunk-uint8array--string-promisevoid),
 [flush](#-flush-promisevoid),
@@ -28,7 +28,7 @@ import {Writer} from "jsr:@shaulov/water@1.1.1"
 
 
 
-#### 📄 `get` ready(): Promise\<`any`>
+#### 📄 `get` ready(): Promise\<`undefined`>
 
 
 

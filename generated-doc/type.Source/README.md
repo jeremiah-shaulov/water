@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Source} from "jsr:@shaulov/water@1.1.1"
+import {Source} from "jsr:@shaulov/water@1.2.0"
 ```
 
 ## This type has
@@ -81,7 +81,8 @@ import {Source} from "jsr:@shaulov/water@1.1.1"
 
 > Is called as response to `rdStream.cancel()` or `reader.cancel()`.
 > After that, no more callbacks are called (except `catch()` and/or `finally()`).
-> If this callback is not set, the default behavior is to read and discard the stream to the end.
+> If this callback is not set, cancel is a no-op (the stream is simply considered closed),
+> matching the WHATWG Streams Standard default `cancelAlgorithm`.
 > This callback can be called in the middle of `read()` (before it's promise fulfilled), to let
 > you interrupt the reading operation.
 

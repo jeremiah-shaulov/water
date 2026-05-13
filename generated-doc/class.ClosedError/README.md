@@ -3,7 +3,7 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {ClosedError} from "jsr:@shaulov/water@1.1.1"
+import {ClosedError} from "jsr:@shaulov/water@1.2.0"
 ```
 
 ## This class has

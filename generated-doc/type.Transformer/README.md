@@ -3,15 +3,16 @@
 [Documentation Index](../README.md)
 
 ```ts
-import {Transformer} from "jsr:@shaulov/water@1.1.1"
+import {Transformer} from "jsr:@shaulov/water@1.2.0"
 ```
 
 ## This type has
 
-- 3 methods:
+- 4 methods:
 [start](#-startwriter-writer-void--promiselikevoid),
 [transform](#-transformwriter-writer-chunk-uint8array-canreturnzero-boolean-number--promiselikenumber),
-[flush](#-flushwriter-writer-void--promiselikevoid)
+[flush](#-flushwriter-writer-void--promiselikevoid),
+[cancel](#-cancelreason-unknown-void--promiselikevoid)
 
 
 #### ⚙ start?(writer: [Writer](../class.Writer/README.md)): `void` | PromiseLike\<`void`>
@@ -43,6 +44,14 @@ import {Transformer} from "jsr:@shaulov/water@1.1.1"
 #### ⚙ flush?(writer: [Writer](../class.Writer/README.md)): `void` | PromiseLike\<`void`>
 
 > At last, when the whole stream was transformed, this callback is called.
+
+
+
+#### ⚙ cancel?(reason: `unknown`): `void` | PromiseLike\<`void`>
+
+> Called when the readable side is canceled or the writable side is aborted.
+> After this callback runs, the writable side is aborted (which cancels the source in a pipe chain).
+> Matches the WHATWG Streams Standard `transformer.cancel` callback.
 
 
 
