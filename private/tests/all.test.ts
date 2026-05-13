@@ -2283,14 +2283,34 @@ Deno.test
 	async () =>
 	{	let pos = 0;
 		let sourceCancelled = false;
+		// Track and cancel the source's pending read timer so it doesn't leak after cancel
+		let pendingTimer: number|undefined;
 		const rs = new RdStream
-		(	{	async read(v)
-				{	await new Promise(y => setTimeout(y, 5));
-					if (pos > 50) return 0;
-					v[0] = pos++;
-					return 1;
+		(	{	read(v)
+				{	return new Promise<number|null>
+					(	resolve =>
+						{	pendingTimer = setTimeout
+							(	() =>
+								{	pendingTimer = undefined;
+									if (pos > 50)
+									{	resolve(0);
+										return;
+									}
+									v[0] = pos++;
+									resolve(1);
+								},
+								5
+							);
+						}
+					);
 				},
-				cancel() {sourceCancelled = true;}
+				cancel()
+				{	sourceCancelled = true;
+					if (pendingTimer !== undefined)
+					{	clearTimeout(pendingTimer);
+						pendingTimer = undefined;
+					}
+				}
 			}
 		);
 		let destAborted = false;
