@@ -2279,6 +2279,28 @@ Deno.test
 );
 
 Deno.test
+(	'TrStream: transform that throws errors the readable side',
+	async () =>
+	{	const tr = new TrStream({transform() {throw new Error('transform-fail');}});
+		let n = 0;
+		let cancelCalled = false;
+		const rs = new RdStream
+		(	{	read(v) {if (n++ > 5) return 0; v[0]=1; return 1;},
+				cancel() {cancelCalled = true;}
+			}
+		);
+		let rejection: Error|undefined;
+		await rs.pipeThrough(tr).bytes().then
+		(	() => {},
+			e => {rejection = e instanceof Error ? e : new Error(e+'');}
+		);
+		assert(rejection !== undefined, 'expected pipeThrough to reject');
+		assert(rejection!.message.includes('transform-fail'), `expected transform-fail, got: ${rejection!.message}`);
+		assertEquals(cancelCalled, true);
+	}
+);
+
+Deno.test
 (	'pipeTo(): cancels the source when destination errors',
 	async () =>
 	{	let nCancel = 0;

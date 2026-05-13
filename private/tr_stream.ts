@@ -193,24 +193,44 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 
 		// User (typically `pipeThrough()`) will write to here the original stream.
 		// Data written to here is passed to `transform()` that is expected to call `writer.write()`.
+		// When the writable side errors (transform() throws, flush() throws, etc.),
+		// propagate the error to the readable side so consumers don't deadlock.
+		function notifyReadableError(reason: Any)
+		{	if (!isEof)
+			{	isError = true;
+				error = reason;
+				isEof = true;
+				currentChunk = EMPTY_CHUNK;
+				currentViewReject?.(reason);
+				currentViewResolve = undefined;
+				currentViewReject = undefined;
+			}
+		}
+
 		this.writable = new WrStreamInternal
 		(	{	start: !start ? undefined : () => start(writer),
 
-				write(chunk, canReturnZero)
-				{	switch (useCanReturnZero)
-					{	case UseCanReturnZero.YES:
-							return transform(writer, chunk, canReturnZero);
-						case UseCanReturnZero.NO:
-							return transformWithCanReturnZero(chunk);
-						default:
-							if (canReturnZero)
-							{	useCanReturnZero = UseCanReturnZero.YES;
-								return transform(writer, chunk, canReturnZero);
-							}
-							else
-							{	useCanReturnZero = UseCanReturnZero.NO;
-								return transformWithCanReturnZero(chunk);
-							}
+				async write(chunk, canReturnZero)
+				{	try
+					{	switch (useCanReturnZero)
+						{	case UseCanReturnZero.YES:
+								return await transform(writer, chunk, canReturnZero);
+							case UseCanReturnZero.NO:
+								return await transformWithCanReturnZero(chunk);
+							default:
+								if (canReturnZero)
+								{	useCanReturnZero = UseCanReturnZero.YES;
+									return await transform(writer, chunk, canReturnZero);
+								}
+								else
+								{	useCanReturnZero = UseCanReturnZero.NO;
+									return await transformWithCanReturnZero(chunk);
+								}
+						}
+					}
+					catch (e)
+					{	notifyReadableError(e);
+						throw e;
 					}
 				},
 
@@ -229,6 +249,10 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 						{	await flush?.(writer);
 						}
 					}
+					catch (e)
+					{	notifyReadableError(e);
+						throw e;
+					}
 					finally
 					{	if (!isEof) // transform() may have already closed/aborted the writer
 						{	await writer.close();
@@ -237,7 +261,8 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 				},
 
 				abort(reason)
-				{	return writer.abort(reason);
+				{	notifyReadableError(reason);
+					return writer.abort(reason);
 				},
 			}
 		);
