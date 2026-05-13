@@ -2279,6 +2279,23 @@ Deno.test
 );
 
 Deno.test
+(	'Writer.desiredSize: throws TypeError after releaseLock()',
+	() =>
+	{	const wr = new WrStream({write: c => c.byteLength});
+		const writer = wr.getWriter();
+		writer.releaseLock();
+		let err: unknown;
+		try
+		{	void writer.desiredSize;
+		}
+		catch (e)
+		{	err = e;
+		}
+		assert(err instanceof TypeError);
+	}
+);
+
+Deno.test
 (	'WrStream.close(): returns rejected promise when locked (not throws)',
 	async () =>
 	{	const wr = new WrStream({write: c => c.byteLength});

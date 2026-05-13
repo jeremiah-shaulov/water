@@ -277,7 +277,8 @@ export class Writer extends ReaderOrWriter<WriteCallbackAccessor>
 {	#desiredSize = DEFAULT_AUTO_ALLOCATE_SIZE;
 
 	get desiredSize()
-	{	return this.#desiredSize;
+	{	this.getCallbackAccessor(); // throws TypeError if the writer has been released
+		return this.#desiredSize;
 	}
 
 	get ready()
