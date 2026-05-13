@@ -2279,6 +2279,40 @@ Deno.test
 );
 
 Deno.test
+(	'Reader.read(): accepts any ArrayBufferView, not only Uint8Array',
+	async () =>
+	{	let n = 0;
+		const rs = new RdStream
+		(	{	read(view)
+				{	if (n > 0)
+					{	return 0;
+					}
+					view[0] = 0xDE;
+					view[1] = 0xAD;
+					view[2] = 0xBE;
+					view[3] = 0xEF;
+					n++;
+					return 4;
+				}
+			}
+		);
+		const reader = rs.getReader({mode: 'byob'});
+		try
+		{	const buf = new ArrayBuffer(4);
+			const dv = new DataView(buf);
+			const {value, done} = await reader.read(dv);
+			assertEquals(done, false);
+			assert(value instanceof DataView);
+			const u8 = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+			assertEquals(Array.from(u8), [0xDE, 0xAD, 0xBE, 0xEF]);
+		}
+		finally
+		{	reader.releaseLock();
+		}
+	}
+);
+
+Deno.test
 (	'RdStream.from(ReadableStream): BYOB branch can serve reads larger than 32 KiB in one call',
 	async () =>
 	{	const big = new Uint8Array(200 * 1024); // 200 KiB

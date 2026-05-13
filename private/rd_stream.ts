@@ -710,18 +710,38 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			return {value: view2 as Any, done: !view2};
 		}
 		else
-		{	if (!(view instanceof Uint8Array))
-			{	throw new Error('Only Uint8Array is supported'); // i always return `Uint8Array`, and it must be also `V`
-			}
-			const min = options?.min;
+		{	const min = options?.min;
 			if (min!=undefined && (min<=0 || min>view.byteLength))
 			{	throw new Error('Invalid min passed to read()');
 			}
-			const view2 = await this.getCallbackAccessor().read(view, min);
-			return {
-				value: (!view2 ? view.subarray(0, 0) : view2) as Any,
-				done: !view2 || min!=undefined && view2.byteLength<min,
-			};
+			// Accept any `ArrayBufferView` (DataView, Int32Array, etc.), like native `ReadableStreamBYOBReader.read()` does.
+			// Internally pass a `Uint8Array` over the same buffer region; the buffer is not transferred.
+			const u8 = view instanceof Uint8Array ? view : new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+			const view2 = await this.getCallbackAccessor().read(u8, min);
+			if (!view2)
+			{	return {value: (view instanceof Uint8Array ? view.subarray(0, 0) : view) as Any, done: true};
+			}
+			const done = min!=undefined && view2.byteLength<min;
+			if (view instanceof Uint8Array)
+			{	return {value: view2 as Any, done};
+			}
+			// Re-project the actually-read region back into the original view's type
+			// deno-lint-ignore no-explicit-any
+			const Ctor: any = view.constructor;
+			let result: ArrayBufferView;
+			if (Ctor === DataView)
+			{	result = new DataView(view.buffer, view2.byteOffset, view2.byteLength);
+			}
+			else
+			{	const bps = (view as Any).BYTES_PER_ELEMENT;
+				if (typeof bps === 'number' && bps > 0)
+				{	result = new Ctor(view.buffer, view2.byteOffset, Math.floor(view2.byteLength / bps));
+				}
+				else
+				{	result = view2;
+				}
+			}
+			return {value: result as Any, done};
 		}
 	}
 
