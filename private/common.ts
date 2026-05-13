@@ -176,7 +176,14 @@ export class CallbackAccessor
 				cancelCurOp?.();
 				cancelCurOp = undefined;
 				if (this.error == undefined)
-				{	reportClosed?.();
+				{	if (this.useAbortNotCancel)
+					{	// Writable streams: closed promise rejects with the abort reason (per WHATWG Streams Standard)
+						reportClosedWithError?.(reason);
+					}
+					else
+					{	// Readable streams: closed promise resolves on cancel
+						reportClosed?.();
+					}
 				}
 				if (promise)
 				{	try

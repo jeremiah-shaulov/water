@@ -2279,6 +2279,19 @@ Deno.test
 );
 
 Deno.test
+(	'Writer.closed: rejects with abort reason after WrStream.abort()',
+	async () =>
+	{	const ws = new WrStream({write: c => c.byteLength, abort() {}});
+		const abortReason = new Error('my-abort-reason');
+		await ws.abort(abortReason);
+		const writer = ws.getWriter();
+		let rejection: unknown;
+		await writer.closed.then(() => {}, e => {rejection = e});
+		assertEquals(rejection, abortReason);
+	}
+);
+
+Deno.test
 (	'TrStream: transform that throws errors the readable side',
 	async () =>
 	{	const tr = new TrStream({transform() {throw new Error('transform-fail');}});
