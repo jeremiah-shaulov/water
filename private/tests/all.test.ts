@@ -2263,3 +2263,31 @@ Deno.test
 		assertEquals(error?.message, 'Stream was canceled');
 	}
 );
+
+Deno.test
+(	'RdStream.from(): empty Uint8Array chunk must not terminate the stream (async iterable)',
+	async () =>
+	{	async function* gen()
+		{	yield new Uint8Array([1, 2, 3]);
+			yield new Uint8Array; // empty chunk - must NOT be treated as EOF
+			yield new Uint8Array([4, 5, 6]);
+		}
+		const rs = RdStream.from(gen());
+		const data = await rs.bytes();
+		assertEquals(Array.from(data), [1, 2, 3, 4, 5, 6]);
+	}
+);
+
+Deno.test
+(	'RdStream.from(): empty Uint8Array chunk must not terminate the stream (sync iterable)',
+	async () =>
+	{	function* gen()
+		{	yield new Uint8Array([1, 2, 3]);
+			yield new Uint8Array; // empty chunk - must NOT be treated as EOF
+			yield new Uint8Array([4, 5, 6]);
+		}
+		const rs = RdStream.from(gen());
+		const data = await rs.bytes();
+		assertEquals(Array.from(data), [1, 2, 3, 4, 5, 6]);
+	}
+);

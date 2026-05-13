@@ -164,7 +164,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 								let buffer: Uint8Array|undefined;
 								innerRead = async view =>
 								{	try
-									{	if (!buffer)
+									{	while (!buffer || buffer.byteLength === 0)
 										{	const {value, done} = await reader.read();
 											if (done)
 											{	reader.releaseLock();
@@ -208,7 +208,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 			let buffer: Uint8Array|undefined;
 			return new RdStream
 			(	{	async read(view)
-					{	if (!buffer)
+					{	while (!buffer || buffer.byteLength === 0)
 						{	const {value, done} = await it.next();
 							if (done)
 							{	return null;
@@ -242,7 +242,7 @@ export class RdStream extends ReadableStream<Uint8Array>
 			let buffer: Uint8Array|undefined;
 			return new RdStream
 			(	{	async read(view)
-					{	if (!buffer)
+					{	while (!buffer || buffer.byteLength === 0)
 						{	const {value, done} = it.next();
 							if (done)
 							{	return null;
