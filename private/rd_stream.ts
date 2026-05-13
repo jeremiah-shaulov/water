@@ -78,7 +78,8 @@ export type Source =
 
 	/**	Is called as response to `rdStream.cancel()` or `reader.cancel()`.
 		After that, no more callbacks are called (except `catch()` and/or `finally()`).
-		If this callback is not set, the default behavior is to read and discard the stream to the end.
+		If this callback is not set, cancel is a no-op (the stream is simply considered closed),
+		matching the WHATWG Streams Standard default `cancelAlgorithm`.
 		This callback can be called in the middle of `read()` (before it's promise fulfilled), to let
 		you interrupt the reading operation.
 	 **/
@@ -1072,9 +1073,18 @@ class ReadableStreamIterator implements AsyncIterableIterator<Uint8Array>
 		return {value, done: false};
 	}
 
-	// deno-lint-ignore require-await
 	async return(value?: Uint8Array): Promise<ItResultDone<Uint8Array>>
-	{	this[Symbol.dispose]();
+	{	// Per WHATWG Streams Standard: await cancel and propagate its rejection
+		// (so `for await ... break` surfaces source.cancel() errors, matching the
+		// native ReadableStream async iterator).
+		try
+		{	if (!this.preventCancel)
+			{	await this.reader.cancel();
+			}
+		}
+		finally
+		{	this.reader.releaseLock();
+		}
 		return {value, done: true};
 	}
 
@@ -1083,10 +1093,11 @@ class ReadableStreamIterator implements AsyncIterableIterator<Uint8Array>
 	}
 
 	[Symbol.dispose]()
-	{	try
+	{	// Symbol.dispose is synchronous, so we can only fire-and-forget cancel here.
+		// Any cancel rejection is swallowed (can't synchronously propagate).
+		try
 		{	if (!this.preventCancel)
-			{	// Swallow cancel rejection: `for await ... break` should not surface errors from source.cancel().
-				const cancelPromise = this.reader.cancel();
+			{	const cancelPromise = this.reader.cancel();
 				if (cancelPromise && typeof cancelPromise.then === 'function')
 				{	cancelPromise.then(undefined, () => {});
 				}

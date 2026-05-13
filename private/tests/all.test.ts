@@ -4,12 +4,38 @@
 import {RdStream, type Source, TrStream, WrStream} from '../../mod.ts';
 import {assertEquals, assert} from './deps.ts';
 
-/**	Embedded deno reader fails with `error: Promise resolution is still pending but the event loop has already resolved`
-	when calling `read()`.
+/**	Native `ReadableStream` (byte-mode, BYOB reader) leaves `reader.read(view)` pending forever
+	when the source's `pull()` calls `controller.close()` without first calling
+	`byobRequest.respond(...)`. The await in the test runner surfaces as
+	`Promise resolution is still pending but the event loop has already resolved`.
+
+	The same behavior is reproduced on Node.js 24, and it appears to be a WHATWG-Streams spec gap:
+	`ReadableStreamClose` only explicitly drains *default* reader read requests; pending BYOB
+	`[[readIntoRequests]]` are supposed to be drained via
+	`ReadableByteStreamControllerRespondInClosedState`, which fires only if the source calls
+	`byobRequest.respond(0)` after queueing close. Sources that just call `close()` at EOF
+	(which is what almost every source does) leave the pending BYOB read unresolved.
+
+	When `true`, tests that go through a native `ReadableStream` skip the post-EOF
+	`read()`→`done: true` assertion to avoid hanging the test runner. `RdStream` settles
+	correctly in that case (with `done: true` and an empty view), so it is always asserted.
+	Set to `false` once the spec / implementations close this gap.
  **/
 const DENO_READER_HAS_BUG_1 = true;
 
-/**	Embedded deno reader hangs forever when calling `read(view, {min})` when there are few bytes left that the specified `min`.
+/**	Native `ReadableStream` (byte-mode, BYOB reader) leaves `reader.read(view, {min})` pending
+	forever when `bytesFilled < min` and the source's `pull()` calls `controller.close()`.
+	Per spec the read should resolve with `{value: partial-view, done: true}` (EOF reached
+	before `min` could be met), but neither Deno nor Node ever settle the promise.
+
+	Same root cause as [[DENO_READER_HAS_BUG_1]] — the spec's close path doesn't
+	explicitly drain pending pull-into descriptors that haven't reached `minimumFill`. Without
+	an explicit `byobRequest.respond(0)` from the source after close was queued, the descriptor
+	stays in the controller indefinitely.
+
+	When `true`, tests that go through a native `ReadableStream` skip the "min-not-met returns
+	partial data with `done: true`" assertion. `RdStream` settles correctly and is always
+	asserted. Set to `false` once the spec / implementations close this gap.
  **/
 const DENO_READER_HAS_BUG_2 = true;
 
@@ -2272,26 +2298,99 @@ Deno.test
 			yield new Uint8Array; // empty chunk - must NOT be treated as EOF
 			yield new Uint8Array([4, 5, 6]);
 		}
+		// Native baseline
+		const nativeOut: number[] = [];
+		const nativeRs = (ReadableStream as Any).from(gen());
+		const nativeReader = nativeRs.getReader();
+		while (true)
+		{	const {value, done} = await nativeReader.read();
+			if (done) break;
+			for (const b of value as Uint8Array) nativeOut.push(b);
+		}
+		assertEquals(nativeOut, [1, 2, 3, 4, 5, 6], 'native baseline');
+		// Our impl matches
 		const rs = RdStream.from(gen());
 		const data = await rs.bytes();
-		assertEquals(Array.from(data), [1, 2, 3, 4, 5, 6]);
+		assertEquals(Array.from(data), nativeOut);
 	}
 );
 
 Deno.test
 (	'TrStream: cancel readable side propagates upstream to source',
 	async () =>
-	{	let n = 0;
+	{	// Native baseline
+		{	let nativeN = 0;
+			let nativeCanceled = false;
+			let nativeTimer: number|undefined;
+			const nativeRs = new ReadableStream
+			(	{	pull(c)
+					{	return new Promise<void>
+						(	resolve =>
+							{	nativeTimer = setTimeout
+								(	() =>
+									{	nativeTimer = undefined;
+										if (nativeN++ > 1000)
+										{	c.close();
+											resolve();
+											return;
+										}
+										const v = new Uint8Array(1);
+										v[0] = 1;
+										c.enqueue(v);
+										resolve();
+									},
+									5
+								);
+							}
+						);
+					},
+					cancel()
+					{	nativeCanceled = true;
+						if (nativeTimer !== undefined)
+						{	clearTimeout(nativeTimer);
+							nativeTimer = undefined;
+						}
+					}
+				}
+			);
+			const nativeTr = new TransformStream;
+			const nativePiped = nativeRs.pipeThrough(nativeTr);
+			const nativeReader = nativePiped.getReader();
+			await nativeReader.read();
+			await nativeReader.cancel('downstream-cancel');
+			await new Promise(y => setTimeout(y, 50));
+			assertEquals(nativeCanceled, true, 'native: source should be canceled');
+		}
+		// Our impl
+		let n = 0;
 		let sourceCancelled = false;
-		// Use an ASYNC read so pipeTo can't drain everything synchronously before cancel fires
+		let pendingTimer: number|undefined;
 		const rs = new RdStream
-		(	{	async read(v)
-				{	await new Promise(y => setTimeout(y, 5));
-					if (n++ > 1000) return 0;
-					v[0] = 1;
-					return 1;
+		(	{	read(v)
+				{	return new Promise<number|null>
+					(	resolve =>
+						{	pendingTimer = setTimeout
+							(	() =>
+								{	pendingTimer = undefined;
+									if (n++ > 1000)
+									{	resolve(0);
+										return;
+									}
+									v[0] = 1;
+									resolve(1);
+								},
+								5
+							);
+						}
+					);
 				},
-				cancel() {sourceCancelled = true;}
+				cancel()
+				{	sourceCancelled = true;
+					if (pendingTimer !== undefined)
+					{	clearTimeout(pendingTimer);
+						pendingTimer = undefined;
+					}
+				}
 			}
 		);
 		const tr = new TrStream;
@@ -2307,7 +2406,22 @@ Deno.test
 Deno.test
 (	'TrStream: standalone readable.cancel() does not hang',
 	async () =>
-	{	const tr = new TrStream;
+	{	// Native baseline
+		{	const nativeTr = new TransformStream;
+			let nativeTimer: number|undefined;
+			let nativeResolved = false;
+			await Promise.race
+			(	[	nativeTr.readable.cancel('hi').then(() => {nativeResolved = true}),
+					new Promise<void>(y => {nativeTimer = setTimeout(y, 500)})
+				]
+			);
+			if (nativeTimer !== undefined)
+			{	clearTimeout(nativeTimer);
+			}
+			assertEquals(nativeResolved, true, 'native: readable.cancel() must resolve');
+		}
+		// Our impl
+		const tr = new TrStream;
 		let timer: number|undefined;
 		let resolved = false;
 		await Promise.race
@@ -2315,43 +2429,137 @@ Deno.test
 				new Promise<void>(y => {timer = setTimeout(y, 500);})
 			]
 		);
-		if (timer !== undefined) clearTimeout(timer);
+		if (timer !== undefined)
+		{	clearTimeout(timer);
+		}
 		assertEquals(resolved, true, 'readable.cancel() must resolve, not hang');
 	}
 );
 
 Deno.test
-(	'for await...of break does not surface errors from source.cancel()',
+(	'for await...of break: cancel error propagates cleanly (no unhandled rejection)',
 	async () =>
-	{	let n = 0;
-		const rs = new RdStream
-		(	{	read(v) {if (n++ > 20) return 0; v[0] = n; return 1;},
-				cancel() {throw new Error('cancel-fail');},
-				catch() {/* swallow */}
+	{	// Native baseline: for-await break surfaces the source.cancel() error
+		let nativeSurfaced: Error|undefined;
+		{	let nativeN = 0;
+			const nativeRs = new ReadableStream
+			(	{	pull(c)
+					{	if (nativeN++ > 20)
+						{	c.close();
+							return;
+						}
+						const v = new Uint8Array(1);
+						v[0] = nativeN;
+						c.enqueue(v);
+					},
+					cancel()
+					{	throw new Error('cancel-fail');
+					}
+				}
+			);
+			try
+			{	for await (const chunk of nativeRs)
+				{	if (chunk[0] >= 3)
+					{	break;
+					}
+				}
 			}
-		);
-		// Break out of for-await — iterator should not surface the cancel error
+			catch (e)
+			{	nativeSurfaced = e instanceof Error ? e : new Error(e+'');
+			}
+			await new Promise(y => setTimeout(y, 10));
+		}
+		assert(nativeSurfaced instanceof Error, 'native: cancel error should surface from for-await break');
+		assert(nativeSurfaced!.message.includes('cancel-fail'), `native: ${nativeSurfaced!.message}`);
+
+		// Our impl: same behavior (the error must propagate, not become an unhandled rejection)
 		let surfaced: Error|undefined;
-		try
-		{	for await (const chunk of rs)
-			{	if (chunk[0] >= 3) break;
+		{	let n = 0;
+			const rs = new RdStream
+			(	{	read(v)
+					{	if (n++ > 20)
+						{	return 0;
+						}
+						v[0] = n;
+						return 1;
+					},
+					cancel()
+					{	throw new Error('cancel-fail');
+					}
+				}
+			);
+			try
+			{	for await (const chunk of rs)
+				{	if (chunk[0] >= 3)
+					{	break;
+					}
+				}
 			}
+			catch (e)
+			{	surfaced = e instanceof Error ? e : new Error(e+'');
+			}
+			// If our iterator forgot to await cancel(), the rejection would surface here as
+			// "Uncaught (in promise)" rather than as the for-await throw.
+			await new Promise(y => setTimeout(y, 10));
 		}
-		catch (e)
-		{	surfaced = e instanceof Error ? e : new Error(e+'');
-		}
-		// Give microtasks a chance to surface any unhandled rejection
-		await new Promise(y => setTimeout(y, 10));
-		assertEquals(surfaced, undefined, `for-await break should not surface cancel errors, got: ${surfaced?.message}`);
+		assert(surfaced instanceof Error, 'cancel error should surface from for-await break');
+		assert(surfaced!.message.includes('cancel-fail'), `got: ${surfaced!.message}`);
 	}
 );
 
 Deno.test
 (	'pipeTo(): signal abort cancels the source as well as aborting the destination',
 	async () =>
-	{	let pos = 0;
+	{	// Native baseline
+		{	let nativePos = 0;
+			let nativeSourceCancelled = false;
+			let nativePendingTimer: number|undefined;
+			const nativeRs = new ReadableStream
+			(	{	pull(c)
+					{	return new Promise<void>
+						(	resolve =>
+							{	nativePendingTimer = setTimeout
+								(	() =>
+									{	nativePendingTimer = undefined;
+										if (nativePos > 50)
+										{	c.close();
+											resolve();
+											return;
+										}
+										const v = new Uint8Array(1);
+										v[0] = nativePos++;
+										c.enqueue(v);
+										resolve();
+									},
+									5
+								);
+							}
+						);
+					},
+					cancel()
+					{	nativeSourceCancelled = true;
+						if (nativePendingTimer !== undefined)
+						{	clearTimeout(nativePendingTimer);
+							nativePendingTimer = undefined;
+						}
+					}
+				}
+			);
+			let nativeDestAborted = false;
+			const nativeWs = new WritableStream({write() {}, abort() {nativeDestAborted = true}});
+			const ac = new AbortController;
+			const pipePromise = nativeRs.pipeTo(nativeWs, {signal: ac.signal});
+			const t = setTimeout(() => ac.abort(new Error('user-abort')), 20);
+			let nativeRej: unknown;
+			await pipePromise.then(() => {}, e => {nativeRej = e});
+			clearTimeout(t);
+			assert(nativeRej instanceof Error, 'native: pipe should reject');
+			assertEquals(nativeDestAborted, true, 'native: dest aborted');
+			assertEquals(nativeSourceCancelled, true, 'native: source canceled');
+		}
+		// Our impl
+		let pos = 0;
 		let sourceCancelled = false;
-		// Track and cancel the source's pending read timer so it doesn't leak after cancel
 		let pendingTimer: number|undefined;
 		const rs = new RdStream
 		(	{	read(v)
@@ -2382,7 +2590,7 @@ Deno.test
 			}
 		);
 		let destAborted = false;
-		const ws = new WrStream({write: c => c.byteLength, abort() {destAborted = true;}});
+		const ws = new WrStream({write: c => c.byteLength, abort() {destAborted = true}});
 		const ac = new AbortController;
 		const pipePromise = rs.pipeTo(ws, {signal: ac.signal});
 		const t = setTimeout(() => ac.abort(new Error('user-abort')), 20);
@@ -2398,7 +2606,7 @@ Deno.test
 Deno.test
 (	'Sink.write() returning more than chunk.byteLength must be rejected',
 	async () =>
-	{	const ws = new WrStream({write(c) {return c.byteLength + 100;}});
+	{	const ws = new WrStream({write(c) {return c.byteLength + 100}});
 		let rejection: unknown;
 		await ws.write(new Uint8Array([1, 2, 3])).then(() => {}, e => {rejection = e});
 		assert(rejection instanceof Error, 'expected an error when write() returns oversized count');
@@ -2421,8 +2629,14 @@ Deno.test
 	{	let n = 0;
 		const rs = new RdStream
 		(	{	read(v)
-				{	if (n++ > 0) return 0;
-					v[0] = 1; v[1] = 2; v[2] = 3; v[3] = 4; v[4] = 5;
+				{	if (n++ > 0)
+					{	return 0;
+					}
+					v[0] = 1;
+					v[1] = 2;
+					v[2] = 3;
+					v[3] = 4;
+					v[4] = 5;
 					return v.byteLength + 100; // lie about how much we wrote
 				}
 			}
@@ -2437,7 +2651,7 @@ Deno.test
 (	'Writer.flush(): rejects after close()',
 	async () =>
 	{	let flushCalled = false;
-		const ws = new WrStream({write: c => c.byteLength, flush() {flushCalled = true;}});
+		const ws = new WrStream({write: c => c.byteLength, flush() {flushCalled = true}});
 		const writer = ws.getWriter();
 		await writer.close();
 		let rejection: unknown;
@@ -2450,8 +2664,17 @@ Deno.test
 Deno.test
 (	'Writer.closed: rejects with abort reason after WrStream.abort()',
 	async () =>
-	{	const ws = new WrStream({write: c => c.byteLength, abort() {}});
-		const abortReason = new Error('my-abort-reason');
+	{	const abortReason = new Error('my-abort-reason');
+		// Native baseline
+		{	const nativeWs = new WritableStream({write() {}});
+			await nativeWs.abort(abortReason);
+			const nativeWriter = nativeWs.getWriter();
+			let nativeRej: unknown;
+			await nativeWriter.closed.then(() => {}, e => {nativeRej = e});
+			assertEquals(nativeRej, abortReason, 'native baseline');
+		}
+		// Our impl
+		const ws = new WrStream({write: c => c.byteLength, abort() {}});
 		await ws.abort(abortReason);
 		const writer = ws.getWriter();
 		let rejection: unknown;
@@ -2463,18 +2686,55 @@ Deno.test
 Deno.test
 (	'TrStream: transform that throws errors the readable side',
 	async () =>
-	{	const tr = new TrStream({transform() {throw new Error('transform-fail');}});
+	{	// Native baseline
+		{	const nativeTr = new TransformStream({transform() {throw new Error('transform-fail')}});
+			let nativeN = 0;
+			let nativeCanceled = false;
+			const nativeRs = new ReadableStream
+			(	{	pull(c)
+					{	if (nativeN++ > 5)
+						{	c.close();
+							return;
+						}
+						const v = new Uint8Array(1);
+						v[0] = 1;
+						c.enqueue(v);
+					},
+					cancel()
+					{	nativeCanceled = true;
+					}
+				}
+			);
+			let nativeRej: Error|undefined;
+			await new Response(nativeRs.pipeThrough(nativeTr)).bytes().then
+			(	() => {},
+				(e: unknown) => {nativeRej = e instanceof Error ? e : new Error(String(e))}
+			);
+			assert(nativeRej !== undefined, 'native: pipeThrough should reject');
+			assert(nativeRej!.message.includes('transform-fail'), `native: ${nativeRej!.message}`);
+			assertEquals(nativeCanceled, true, 'native: source canceled');
+		}
+		// Our impl
+		const tr = new TrStream({transform() {throw new Error('transform-fail')}});
 		let n = 0;
 		let cancelCalled = false;
 		const rs = new RdStream
-		(	{	read(v) {if (n++ > 5) return 0; v[0]=1; return 1;},
-				cancel() {cancelCalled = true;}
+		(	{	read(v)
+				{	if (n++ > 5)
+					{	return 0;
+					}
+					v[0] = 1;
+					return 1;
+				},
+				cancel()
+				{	cancelCalled = true;
+				}
 			}
 		);
 		let rejection: Error|undefined;
 		await rs.pipeThrough(tr).bytes().then
 		(	() => {},
-			e => {rejection = e instanceof Error ? e : new Error(e+'');}
+			e => {rejection = e instanceof Error ? e : new Error(e+'')}
 		);
 		assert(rejection !== undefined, 'expected pipeThrough to reject');
 		assert(rejection!.message.includes('transform-fail'), `expected transform-fail, got: ${rejection!.message}`);
@@ -2485,7 +2745,37 @@ Deno.test
 Deno.test
 (	'pipeTo(): cancels the source when destination errors',
 	async () =>
-	{	let nCancel = 0;
+	{	// Native baseline
+		{	let nativeCancel = 0;
+			let nativeCancelReason: unknown;
+			let nativeReads = 0;
+			const nativeRs = new ReadableStream
+			(	{	pull(c)
+					{	nativeReads++;
+						const v = new Uint8Array(1);
+						v[0] = nativeReads & 0xFF;
+						c.enqueue(v);
+						if (nativeReads > 100)
+						{	c.close();
+						}
+					},
+					cancel(reason)
+					{	nativeCancel++;
+						nativeCancelReason = reason;
+					}
+				}
+			);
+			const nativeWs = new WritableStream({write() {throw new Error('sink-fail')}});
+			let nativeRej: unknown;
+			await nativeRs.pipeTo(nativeWs).then(() => {}, e => {nativeRej = e});
+			assert(nativeRej instanceof Error, 'native: pipe should reject');
+			assertEquals((nativeRej as Error).message, 'sink-fail');
+			assertEquals(nativeCancel, 1, 'native: source canceled once');
+			assert(nativeCancelReason instanceof Error);
+			assertEquals((nativeCancelReason as Error).message, 'sink-fail', 'native: cancel reason is sink error');
+		}
+		// Our impl
+		let nCancel = 0;
 		let cancelReason: unknown;
 		let nReads = 0;
 		const rs = new RdStream
@@ -2517,7 +2807,16 @@ Deno.test
 Deno.test
 (	'Writer.close(): second call rejects with TypeError (stream already closed)',
 	async () =>
-	{	const ws = new WrStream({write: c => c.byteLength});
+	{	// Native baseline
+		{	const nativeWs = new WritableStream({write() {}});
+			const nativeWriter = nativeWs.getWriter();
+			await nativeWriter.close();
+			let nativeRej: unknown;
+			await nativeWriter.close().then(() => {}, e => {nativeRej = e});
+			assert(nativeRej instanceof TypeError, 'native baseline');
+		}
+		// Our impl
+		const ws = new WrStream({write: c => c.byteLength});
 		const writer = ws.getWriter();
 		await writer.close();
 		let rejection: unknown;
@@ -2529,7 +2828,26 @@ Deno.test
 Deno.test
 (	'Reader.cancel(): returns rejected promise after releaseLock() (not throws)',
 	async () =>
-	{	const rs = new RdStream({read(v) {v[0]=1; return 1;}, cancel() {}});
+	{	// Native baseline
+		{	const nativeRs = new ReadableStream({pull(c) {c.enqueue(new Uint8Array([1]))}});
+			const nativeReader = nativeRs.getReader();
+			nativeReader.releaseLock();
+			let nativeThrew: Error|undefined;
+			let nativeReturned: Promise<void>|undefined;
+			try
+			{	nativeReturned = nativeReader.cancel('x');
+			}
+			catch (e)
+			{	nativeThrew = e instanceof Error ? e : new Error(e+'');
+			}
+			assertEquals(nativeThrew, undefined, 'native: cancel should not throw sync');
+			assert(nativeReturned instanceof Promise);
+			let nativeRej: unknown;
+			await nativeReturned!.then(() => {}, e => {nativeRej = e});
+			assert(nativeRej instanceof TypeError, 'native: cancel should reject with TypeError when detached');
+		}
+		// Our impl
+		const rs = new RdStream({read(v) {v[0]=1; return 1}, cancel() {}});
 		const reader = rs.getReader();
 		reader.releaseLock();
 		let threwSync: Error|undefined;
@@ -2551,7 +2869,39 @@ Deno.test
 Deno.test
 (	'Reader.read(): accepts any ArrayBufferView, not only Uint8Array',
 	async () =>
-	{	let n = 0;
+	{	// Native baseline: BYOB readers in spec accept any ArrayBufferView
+		{	const nativeRs = new ReadableStream
+			(	{	type: 'bytes',
+					pull(c)
+					{	const view = c.byobRequest?.view;
+						if (!view)
+						{	c.close();
+							return;
+						}
+						const u8 = new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
+						u8[0] = 0xDE;
+						u8[1] = 0xAD;
+						u8[2] = 0xBE;
+						u8[3] = 0xEF;
+						c.byobRequest!.respond(4);
+					}
+				}
+			);
+			const nativeReader = nativeRs.getReader({mode: 'byob'});
+			try
+			{	const dv = new DataView(new ArrayBuffer(4));
+				const {value, done} = await nativeReader.read(dv);
+				assertEquals(done, false);
+				assert(value instanceof DataView, 'native: returns DataView when input is DataView');
+				const u8 = new Uint8Array(value.buffer, value.byteOffset, value.byteLength);
+				assertEquals(Array.from(u8), [0xDE, 0xAD, 0xBE, 0xEF], 'native baseline');
+			}
+			finally
+			{	nativeReader.releaseLock();
+			}
+		}
+		// Our impl
+		let n = 0;
 		const rs = new RdStream
 		(	{	read(view)
 				{	if (n > 0)
@@ -2628,7 +2978,15 @@ Deno.test
 Deno.test
 (	'Writer.ready: rejects with TypeError after releaseLock()',
 	async () =>
-	{	const wr = new WrStream({write: c => c.byteLength});
+	{	// Native baseline
+		const nativeWs = new WritableStream({write() {}});
+		const nativeWriter = nativeWs.getWriter();
+		nativeWriter.releaseLock();
+		let nativeRej: unknown;
+		await nativeWriter.ready.then(() => {}, e => {nativeRej = e});
+		assert(nativeRej instanceof TypeError, 'native baseline');
+		// Our impl
+		const wr = new WrStream({write: c => c.byteLength});
 		const writer = wr.getWriter();
 		writer.releaseLock();
 		let rejection: unknown;
@@ -2640,7 +2998,20 @@ Deno.test
 Deno.test
 (	'Writer.desiredSize: throws TypeError after releaseLock()',
 	() =>
-	{	const wr = new WrStream({write: c => c.byteLength});
+	{	// Native baseline
+		const nativeWs = new WritableStream({write() {}});
+		const nativeWriter = nativeWs.getWriter();
+		nativeWriter.releaseLock();
+		let nativeErr: unknown;
+		try
+		{	void nativeWriter.desiredSize;
+		}
+		catch (e)
+		{	nativeErr = e;
+		}
+		assert(nativeErr instanceof TypeError, 'native baseline');
+		// Our impl
+		const wr = new WrStream({write: c => c.byteLength});
 		const writer = wr.getWriter();
 		writer.releaseLock();
 		let err: unknown;
@@ -2657,7 +3028,26 @@ Deno.test
 Deno.test
 (	'WrStream.close(): returns rejected promise when locked (not throws)',
 	async () =>
-	{	const wr = new WrStream({write: c => c.byteLength});
+	{	// Native baseline
+		{	const nativeWs = new WritableStream({write() {}});
+			const nativeWriter = nativeWs.getWriter();
+			let nativeThrew: Error|undefined;
+			let nativeReturned: Promise<void>|undefined;
+			try
+			{	nativeReturned = nativeWs.close();
+			}
+			catch (e)
+			{	nativeThrew = e instanceof Error ? e : new Error(e+'');
+			}
+			assertEquals(nativeThrew, undefined, 'native: close should not throw sync');
+			assert(nativeReturned instanceof Promise, 'native: close should return a Promise');
+			let nativeRej: unknown;
+			await nativeReturned!.then(() => {}, e => {nativeRej = e});
+			assert(nativeRej instanceof TypeError, 'native: close should reject with TypeError when locked');
+			nativeWriter.releaseLock();
+		}
+		// Our impl
+		const wr = new WrStream({write: c => c.byteLength});
 		const writer = wr.getWriter();
 		try
 		{	let returned: Promise<void>|undefined;
@@ -2691,8 +3081,7 @@ Deno.test
 		Object.defineProperty
 		(	ac.signal,
 			'addEventListener',
-			// deno-lint-ignore no-explicit-any
-			{	value: (type: string, listener: any, opts?: any) =>
+			{	value(type: string, listener: Any, opts?: Any)
 				{	if (type === 'abort')
 					{	added++;
 					}
@@ -2703,8 +3092,7 @@ Deno.test
 		Object.defineProperty
 		(	ac.signal,
 			'removeEventListener',
-			// deno-lint-ignore no-explicit-any
-			{	value: (type: string, listener: any, opts?: any) =>
+			{	value(type: string, listener: Any, opts?: Any)
 				{	if (type === 'abort')
 					{	removed++;
 					}
@@ -2740,8 +3128,22 @@ Deno.test
 			yield new Uint8Array; // empty chunk - must NOT be treated as EOF
 			yield new Uint8Array([4, 5, 6]);
 		}
+		// Native baseline
+		const nativeOut = new Array<number>;
+		const nativeRs = (ReadableStream as Any).from(gen());
+		const nativeReader = nativeRs.getReader();
+		while (true)
+		{	const {value, done} = await nativeReader.read();
+			if (done)
+			{	break;
+			}
+			for (const b of value as Uint8Array)
+			{	nativeOut.push(b);
+			}
+		}
+		assertEquals(nativeOut, [1, 2, 3, 4, 5, 6], 'native baseline');
 		const rs = RdStream.from(gen());
 		const data = await rs.bytes();
-		assertEquals(Array.from(data), [1, 2, 3, 4, 5, 6]);
+		assertEquals(Array.from(data), nativeOut);
 	}
 );

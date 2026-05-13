@@ -158,19 +158,8 @@ export class CallbackAccessor
 						else if (callbacks.cancel)
 						{	promise = callbacks.cancel(reason);
 						}
-						else
-						{	promise = this.schedule
-							(	async () =>
-								{	const buffer = new Uint8Array(DEFAULT_AUTO_ALLOCATE_SIZE);
-									while (true)
-									{	const nRead = await callbacks.read!(buffer);
-										if (!nRead)
-										{	break;
-										}
-									}
-								}
-							);
-						}
+						// Per WHATWG Streams Standard: when no cancel callback is provided, the default
+						// cancel algorithm is a no-op. The source is simply considered closed.
 					}
 				}
 				catch (e)
