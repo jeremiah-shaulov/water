@@ -117,12 +117,12 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 					close: async () =>
 					{	// `transform()` called `writer.close()`
 						bufferLen = 0; // discard buffer
-						await this.writable[_closeEvenIfLocked]();
-						isEof = true;
+						isEof = true; // set before closing writable, so its close handler doesn't recursively call writer.close()
 						currentChunk = EMPTY_CHUNK;
 						currentViewResolve?.(0);
 						currentViewResolve = undefined;
 						currentViewReject = undefined;
+						await this.writable[_closeEvenIfLocked]();
 					},
 
 					abort: async reason =>
@@ -225,10 +225,14 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 							buffer = buffer.subarray(n);
 							bufferLen -= n;
 						}
-						await flush?.(writer);
+						if (!isEof)
+						{	await flush?.(writer);
+						}
 					}
 					finally
-					{	await writer.close();
+					{	if (!isEof) // transform() may have already closed/aborted the writer
+						{	await writer.close();
+						}
 					}
 				},
 

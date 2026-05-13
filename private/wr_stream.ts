@@ -311,7 +311,11 @@ export class Writer extends ReaderOrWriter<WriteCallbackAccessor>
 	}
 
 	close(): Promise<void>
-	{	return this.getCallbackAccessor().close();
+	{	const cb = this.getCallbackAccessor();
+		if (cb.isClosed)
+		{	return Promise.reject(new TypeError('Writable stream is closed or errored.'));
+		}
+		return cb.close();
 	}
 
 	abort(reason?: unknown)

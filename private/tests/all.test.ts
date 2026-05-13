@@ -2279,6 +2279,18 @@ Deno.test
 );
 
 Deno.test
+(	'Writer.close(): second call rejects with TypeError (stream already closed)',
+	async () =>
+	{	const ws = new WrStream({write: c => c.byteLength});
+		const writer = ws.getWriter();
+		await writer.close();
+		let rejection: unknown;
+		await writer.close().then(() => {}, e => {rejection = e});
+		assert(rejection instanceof TypeError);
+	}
+);
+
+Deno.test
 (	'Reader.cancel(): returns rejected promise after releaseLock() (not throws)',
 	async () =>
 	{	const rs = new RdStream({read(v) {v[0]=1; return 1;}, cancel() {}});
