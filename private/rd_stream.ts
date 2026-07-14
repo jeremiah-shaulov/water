@@ -741,9 +741,16 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			// Accept any `ArrayBufferView` (DataView, Int32Array, etc.), like native `ReadableStreamBYOBReader.read()` does.
 			// Internally pass a `Uint8Array` over the same buffer region; the buffer is not transferred.
 			const u8 = view instanceof Uint8Array ? view : new Uint8Array(view.buffer, view.byteOffset, view.byteLength);
-			const view2 = await this.getCallbackAccessor().read(u8, min);
+			const bps = view instanceof Uint8Array || view instanceof DataView ? 1 : (view as Any).BYTES_PER_ELEMENT;
+			const bytesPerElement = typeof(bps)=='number' && bps>0 ? bps : 1;
+			// Wait for at least 1 whole element, so the result is never a useless 0-elements view
+			const view2 = await this.getCallbackAccessor().read(u8, min ?? bytesPerElement);
 			if (!view2)
-			{	return {value: (view instanceof Uint8Array ? view.subarray(0, 0) : view) as Any, done: true};
+			{	// EOF: return a zero-length view of the same type
+				const value = view instanceof Uint8Array ? view.subarray(0, 0) :
+					view instanceof DataView ? new DataView(view.buffer, view.byteOffset, 0) :
+					new (view.constructor as Any)(view.buffer, view.byteOffset, 0);
+				return {value: value as Any, done: true};
 			}
 			const done = min!=undefined && view2.byteLength<min;
 			if (view instanceof Uint8Array)
@@ -757,13 +764,13 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			{	result = new DataView(view.buffer, view2.byteOffset, view2.byteLength);
 			}
 			else
-			{	const bps = (view as Any).BYTES_PER_ELEMENT;
-				if (typeof bps === 'number' && bps > 0)
-				{	result = new Ctor(view.buffer, view2.byteOffset, Math.floor(view2.byteLength / bps));
+			{	const nElements = Math.floor(view2.byteLength / bytesPerElement);
+				const rem = view2.byteLength - nElements*bytesPerElement;
+				if (rem > 0)
+				{	// Bytes that don't complete the last element are kept for the next read
+					this.getCallbackAccessor().getOrCreatePiper().unread(view2.subarray(view2.byteLength - rem));
 				}
-				else
-				{	result = view2;
-				}
+				result = new Ctor(view.buffer, view2.byteOffset, nElements);
 			}
 			return {value: result as Any, done};
 		}

@@ -3275,3 +3275,47 @@ Deno.test
 		assertEquals(maxConcurrent, 1);
 	}
 );
+
+Deno.test
+(	'Reader: read() into multi-byte typed array views',
+	async () =>
+	{	// Source: 8 bytes 1..8, delivered 5 bytes at a time - not aligned to Int32Array elements.
+		// Bytes that don't complete an element must be kept for the next read (not dropped),
+		// and at EOF the returned view must be empty (not the whole original view).
+		let pos = 0;
+		const rs = new RdStream
+		(	{	read(view)
+				{	if (pos >= 8)
+					{	return null;
+					}
+					const n = Math.min(5, view.byteLength, 8-pos);
+					for (let i=0; i<n; i++)
+					{	view[i] = pos + i + 1;
+					}
+					pos += n;
+					return n;
+				}
+			}
+		);
+		const reader = rs.getReader({mode: 'byob'});
+		const collected = new Array<number>;
+		let view = new Int32Array(2);
+		while (true)
+		{	const {value, done} = await reader.read(view);
+			if (value)
+			{	for (const b of new Uint8Array(value.buffer, value.byteOffset, value.byteLength))
+				{	collected.push(b);
+				}
+				if (done)
+				{	assertEquals(value.byteLength, 0);
+				}
+			}
+			if (done)
+			{	break;
+			}
+			view = new Int32Array(2);
+		}
+		reader.releaseLock();
+		assertEquals(collected, [1, 2, 3, 4, 5, 6, 7, 8]);
+	}
+);
