@@ -901,8 +901,17 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 			if (writeError)
 			{	throw writeError.error;
 			}
+			if (isEof===undefined && callbackAccessor.isClosed)
+			{	// The source is already closed, or was canceled during the pipe.
+				// Complete the pipe like on EOF: close the destination (unless `preventClose`) and resolve.
+				if (!options?.preventClose)
+				{	await writer.close();
+				}
+				return;
+			}
 			if (isEof !== true)
-			{	// Piper did not reach a normal EOF (returned `false`, or accessor was canceled mid-call → `undefined`).
+			{	// Piper did not reach a normal EOF (returned `false` because the writer closed, or
+				// `undefined` because the destination writer was aborted, interrupting the operation).
 				// Distinguish:
 				//  - Writer closed normally (e.g., transform called writer.close()): keep source alive for reuse.
 				//  - Writer aborted/errored externally: cancel the source per spec.

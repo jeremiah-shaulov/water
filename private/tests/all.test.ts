@@ -3319,3 +3319,58 @@ Deno.test
 		assertEquals(collected, [1, 2, 3, 4, 5, 6, 7, 8]);
 	}
 );
+
+Deno.test
+(	'pipeTo: source already closed',
+	async () =>
+	{	// Native pipeTo() on a closed ReadableStream closes the destination and resolves
+		const rs = new RdStream({read: () => null});
+		assertEquals(await rs.bytes(), new Uint8Array); // drain to EOF - the stream is now closed
+		assertEquals(rs.isClosed, true);
+		let closed = false;
+		const ws = new WrStream
+		(	{	write(chunk)
+				{	return chunk.byteLength;
+				},
+				close()
+				{	closed = true;
+				}
+			}
+		);
+		await rs.pipeTo(ws);
+		assertEquals(closed, true);
+	}
+);
+
+Deno.test
+(	'pipeTo: cancel during pipe',
+	async () =>
+	{	// cancel() works on locked streams, so it can interrupt an active pipeTo().
+		// The pipeTo() promise must settle after that.
+		let interrupt: VoidFunction|undefined;
+		const rs = new RdStream
+		(	{	read()
+				{	return new Promise<number>(y => {interrupt = () => y(0)});
+				},
+				cancel()
+				{	interrupt?.();
+				}
+			}
+		);
+		let closed = false;
+		const ws = new WrStream
+		(	{	write(chunk)
+				{	return chunk.byteLength;
+				},
+				close()
+				{	closed = true;
+				}
+			}
+		);
+		const pipePromise = rs.pipeTo(ws);
+		await new Promise(y => setTimeout(y, 10));
+		await rs.cancel('bye');
+		await pipePromise;
+		assertEquals(closed, true);
+	}
+);
