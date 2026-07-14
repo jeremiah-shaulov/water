@@ -726,7 +726,7 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 	read<V extends ArrayBufferView>(view: V,  options?: {min?: number}): Promise<ItResultOpt<V>>;
 
 	async read<V extends ArrayBufferView>(view?: V,  options?: {min?: number}): Promise<ItResultOpt<V>>
-	{	if (this.throwAfterCancel && this.callbackAccessor?.isClosed!==false)
+	{	if (this.throwAfterCancel && this.callbackAccessor?.isCanceled)
 		{	throw new CancelError('Stream was canceled');
 		}
 		if (!view)

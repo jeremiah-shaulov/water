@@ -3502,3 +3502,16 @@ Deno.test
 		assertEquals(closedErr?.message, 'read failed');
 	}
 );
+
+Deno.test
+(	'Reader: throwAfterCancel - read after normal EOF does not throw',
+	async () =>
+	{	const rs = new RdStream({throwAfterCancel: true, read: () => null});
+		using reader = rs.getReader();
+		const r1 = await reader.read();
+		assertEquals(r1.done, true);
+		// Reading again after the stream closed normally must keep returning EOF, not throw CancelError
+		const r2 = await reader.read();
+		assertEquals(r2.done, true);
+	}
+);

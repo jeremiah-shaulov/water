@@ -23,6 +23,7 @@ export type Callbacks =
 
 export class CallbackAccessor
 {	closed: Promise<undefined>; // Definition in deno built-in type is recently changed from `Promise<void>` to `Promise<undefined>`
+	isCanceled = false;
 	error: unknown;
 	ready: Promise<undefined>; // Definition in deno built-in type is recently changed from `Promise<void>` to `Promise<undefined>`
 	waitBeforeClose: Promise<unknown>|undefined; // Promise that will be awaited before closing the stream. It must not throw (reject).
@@ -123,7 +124,10 @@ export class CallbackAccessor
 	}
 
 	async close(isCancelOrAbort=false, reason?: unknown)
-	{	const waitBeforeClose = this.waitBeforeClose;
+	{	if (isCancelOrAbort)
+		{	this.isCanceled = true; // even if already closed, so `throwAfterCancel` can respect late cancel
+		}
+		const waitBeforeClose = this.waitBeforeClose;
 		const callbacks = this.#callbacks;
 		const cancelCurOps = [...this.#cancelCurOps];
 		const reportClosed = this.#reportClosed;
