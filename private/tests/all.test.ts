@@ -3426,3 +3426,79 @@ Deno.test
 		assertEquals(results.map(r => r.done), [true, true, true]);
 	}
 );
+
+Deno.test
+(	'pipeTo: source read() error aborts the destination and errors the source',
+	async () =>
+	{	// Native baseline: on source error the destination is aborted, and cancel is never called
+		const nativeCalls = new Array<string>;
+		const nrs = new ReadableStream<Uint8Array>
+		(	{	pull()
+				{	throw new Error('read failed');
+				},
+				cancel()
+				{	nativeCalls.push('source.cancel');
+				},
+			}
+		);
+		const nws = new WritableStream<Uint8Array>
+		(	{	write()
+				{
+				},
+				abort(reason)
+				{	nativeCalls.push('sink.abort('+reason+')');
+				},
+			}
+		);
+		let nativeErr: Any;
+		try
+		{	await nrs.pipeTo(nws);
+		}
+		catch (e)
+		{	nativeErr = e;
+		}
+		assertEquals(nativeErr?.message, 'read failed');
+		assertEquals(nativeCalls, ['sink.abort(Error: read failed)']);
+
+		// Our impl: additionally source.catch() is called (per the Source docs), but
+		// source.cancel() and sink.catch() must NOT be
+		const calls = new Array<string>;
+		const rs = new RdStream
+		(	{	read()
+				{	throw new Error('read failed');
+				},
+				cancel()
+				{	calls.push('source.cancel');
+				},
+				catch(reason)
+				{	calls.push('source.catch('+reason+')');
+				},
+			}
+		);
+		const ws = new WrStream
+		(	{	write(chunk)
+				{	return chunk.byteLength;
+				},
+				abort(reason)
+				{	calls.push('sink.abort('+reason+')');
+				},
+				catch(reason)
+				{	calls.push('sink.catch('+reason+')');
+				},
+			}
+		);
+		let error: Any;
+		try
+		{	await rs.pipeTo(ws);
+		}
+		catch (e)
+		{	error = e;
+		}
+		assertEquals(error?.message, 'read failed');
+		assertEquals(calls, ['source.catch(Error: read failed)', 'sink.abort(Error: read failed)']);
+		// The source stream errored (was not canceled), so its closed promise must reject
+		let closedErr: Any;
+		await rs.closed.then(undefined, (e: Any) => {closedErr = e});
+		assertEquals(closedErr?.message, 'read failed');
+	}
+);

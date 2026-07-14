@@ -863,8 +863,11 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 				signal.addEventListener('abort', onAbort);
 			}
 			const curPiper = callbackAccessor.getOrCreatePiper();
-			// Capture write errors locally so they don't get cascaded into the read-side accessor
-			// (which would mark the source as errored and skip calling source.cancel()).
+			// Write errors are tagged at the write callbacks and captured locally, so they don't get
+			// cascaded into the read-side accessor (which would mark the source as errored and skip
+			// calling source.cancel()). Read errors do cascade into it (marking the source as errored
+			// and calling source.catch()), and the outer code aborts the destination then.
+			let readError: {error: unknown} | undefined;
 			const isEof = await callbackAccessor.useCallbacks
 			(	callbacksForRead =>
 				{	const innerPromise = writer instanceof Writer
@@ -873,11 +876,32 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 								(	writer.closed,
 									callbacksForRead,
 									(chunk, canReturnZero) =>
-									{	const resultOrPromise = callbacksForWrite.write!(chunk, canReturnZero);
-										if (typeof(resultOrPromise) != 'object')
-										{	return -resultOrPromise - 1;
+									{	try
+										{	const resultOrPromise = callbacksForWrite.write!(chunk, canReturnZero);
+											if (typeof(resultOrPromise) != 'object')
+											{	return -resultOrPromise - 1;
+											}
+											return resultOrPromise.then
+											(	result => -result - 1,
+												e =>
+												{	writeError = {error: e};
+													throw e;
+												}
+											);
 										}
-										return resultOrPromise.then(result => -result - 1);
+										catch (e)
+										{	writeError = {error: e};
+											throw e;
+										}
+									}
+								).then
+								(	undefined,
+									e =>
+									{	if (writeError)
+										{	throw e; // let the write error cascade into the destination accessor (calls sink.catch())
+										}
+										readError = {error: e}; // keep read errors away from the destination accessor
+										return false;
 									}
 								)
 							)
@@ -885,15 +909,28 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 							(	writer.closed,
 								callbacksForRead,
 								async chunk =>
-								{	await writer.write(chunk);
+								{	try
+									{	await writer.write(chunk);
+									}
+									catch (e)
+									{	writeError = {error: e};
+										throw e;
+									}
 									return -chunk.byteLength - 1;
 								}
 							);
 					return Promise.resolve(innerPromise).then
-					(	v => v,
+					(	v =>
+						{	if (readError)
+							{	throw readError.error; // now inside the read-side accessor context: errors the source
+							}
+							return v;
+						},
 						e =>
-						{	writeError = {error: e};
-							return false; // signal non-EOF; the outer code will throw writeError.error
+						{	if (writeError)
+							{	return false; // signal non-EOF; the outer code will throw writeError.error
+							}
+							throw e; // read error: errors the source; the outer code will abort the destination
 						}
 					);
 				}
