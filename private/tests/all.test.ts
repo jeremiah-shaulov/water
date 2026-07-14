@@ -3240,3 +3240,38 @@ Deno.test
 		}
 	}
 );
+
+Deno.test
+(	'pipeThrough: restart with async source',
+	async () =>
+	{	// Like the sync 'One Two Three Four' restart test, but the source is asynchronous
+		// (each read() resolves in a later tick, like a socket), and delivers small chunks.
+		// When transform() calls writer.close(), pipeTo() returns while a source read()
+		// can still be in flight. Its data must be delivered to the next consumer,
+		// and read() must not be called again before the pending call completes.
+		const data = textEncoder.encode('One Two Three Four');
+		let pos = 0;
+		let nConcurrent = 0;
+		let maxConcurrent = 0;
+		const tokens = new RdStream
+		(	{	async read(view)
+				{	nConcurrent++;
+					if (nConcurrent > maxConcurrent)
+					{	maxConcurrent = nConcurrent;
+					}
+					await new Promise(y => setTimeout(y, 1));
+					nConcurrent--;
+					const n = Math.min(view.byteLength, data.byteLength-pos, 4);
+					view.set(data.subarray(pos, pos+n));
+					pos += n;
+					return n;
+				}
+			}
+		);
+		const sink = new StringSink;
+		await tokens.pipeThrough(new CopyOneToken).pipeTo(sink, {preventClose: true});
+		assertEquals(sink+'', 'One');
+		assertEquals(await tokens.text(), 'Two Three Four');
+		assertEquals(maxConcurrent, 1);
+	}
+);

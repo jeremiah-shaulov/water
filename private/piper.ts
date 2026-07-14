@@ -31,8 +31,22 @@ export class Piper
 		{	while (true)
 			{	// writerClosed?
 				if (writerClosed)
-				{	if (writePromise)
-					{	writePos = readPos;
+				{	if (writePromise !== undefined)
+					{	// Await the pending write, to learn how many bytes it consumed before the writer closed
+						try
+						{	const size = -(typeof(writePromise)=='number' ? writePromise : await writePromise) - 1;
+							if (size > 0)
+							{	writePos += size;
+								if (writePos==readPos && readPromise===undefined)
+								{	readPos = readPos2;
+									readPos2 = 0;
+									writePos = 0;
+								}
+							}
+						}
+						catch
+						{	// Assume the interrupted write consumed nothing
+						}
 					}
 					return false;
 				}
@@ -121,10 +135,9 @@ export class Piper
 					else
 					{	// They want a larger chunk
 						if (readPromise)
-						{	// writerClosed?
+						{	// writerClosed? (the write consumed nothing, so keep the data for a next pipeTo() or read())
 							if (writerClosed)
-							{	writePos = readPos;
-								return false;
+							{	return false;
 							}
 							// Read
 							size = await readPromise;
@@ -249,6 +262,34 @@ export class Piper
 			this.readPromise = readPromise;
 			this.isEof = isEof;
 		}
+	}
+
+	/**	If an interrupted `pipeTo()` left a read operation pending, await it, and record the data
+		it loaded to the buffer, so the buffered data can be consumed with `read()` or `unwrap()`,
+		and a new read can be safely started.
+		Returns true if the source reached EOF.
+	 **/
+	async settleRead()
+	{	const {readPromise} = this;
+		if (readPromise !== undefined)
+		{	this.readPromise = undefined;
+			const size = typeof(readPromise)=='number' || readPromise==null ? readPromise : await readPromise;
+			if (!size)
+			{	this.isEof = true;
+			}
+			else if (!this.usingReadPos2)
+			{	this.readPos += size;
+			}
+			else
+			{	this.readPos2 += size;
+				if (this.readPos == this.writePos)
+				{	this.readPos = this.readPos2;
+					this.readPos2 = 0;
+					this.writePos = 0;
+				}
+			}
+		}
+		return this.isEof;
 	}
 
 	read(view: Uint8Array)

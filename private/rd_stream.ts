@@ -596,13 +596,20 @@ class ReadCallbackAccessor extends CallbackAccessor
 			{	let nFilled = 0;
 				const {curPiper} = this;
 				if (curPiper)
-				{	if (!view)
+				{	// If an interrupted pipeTo() left a read operation pending, first await it,
+					// so its data is not lost, and `read()` is not called again while the previous call is still in progress
+					const piperIsEof = await curPiper.settleRead();
+					if (!view)
 					{	const data = curPiper.unwrap();
 						this.curPiper = undefined;
 						const offset = data.byteOffset + data.byteLength;
 						const haveLength = data.buffer.byteLength - offset;
 						if (haveLength>=this.autoAllocateMin && (!this.#autoAllocateBuffer || this.#autoAllocateBuffer.byteLength<haveLength))
 						{	this.#autoAllocateBuffer = new Uint8Array(data.buffer, offset);
+						}
+						if (piperIsEof)
+						{	await this.close();
+							return data.byteLength ? data : undefined;
 						}
 						if (data.byteLength)
 						{	return data;
@@ -612,6 +619,18 @@ class ReadCallbackAccessor extends CallbackAccessor
 					{	const data = curPiper.read(view);
 						if (!data)
 						{	this.dropPiper(curPiper);
+							if (piperIsEof)
+							{	await this.close();
+								return undefined;
+							}
+						}
+						else if (piperIsEof)
+						{	if (data.byteLength == view.byteLength)
+							{	return data; // the piper may contain more data
+							}
+							this.dropPiper(curPiper);
+							await this.close();
+							return data;
 						}
 						else if (data.byteLength >= min)
 						{	return data;
@@ -965,12 +984,19 @@ export class Reader extends ReaderOrWriter<ReadCallbackAccessor>
 				let totalLen = 0;
 				const {curPiper} = callbackAccessor;
 				if (curPiper)
-				{	const chunk = curPiper.unwrap();
+				{	// If an interrupted pipeTo() left a read operation pending, first await it,
+					// so its data is not lost, and `read()` is not called again while the previous call is still in progress
+					const piperIsEof = await curPiper.settleRead();
+					const chunk = curPiper.unwrap();
 					callbackAccessor.curPiper = undefined;
 					chunks[0] = chunk;
 					totalLen = chunk.byteLength;
 					if (totalLen > lengthLimit)
 					{	throw new TooBigError('Data is too big');
+					}
+					if (piperIsEof)
+					{	await callbackAccessor.close();
+						return chunk;
 					}
 				}
 				let chunkSize = callbackAccessor.autoAllocateChunkSize || DEFAULT_AUTO_ALLOCATE_SIZE;
