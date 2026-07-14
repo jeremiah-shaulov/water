@@ -27,7 +27,7 @@ export class CallbackAccessor
 	ready: Promise<undefined>; // Definition in deno built-in type is recently changed from `Promise<void>` to `Promise<undefined>`
 	waitBeforeClose: Promise<unknown>|undefined; // Promise that will be awaited before closing the stream. It must not throw (reject).
 	#callbacks: Callbacks|undefined;
-	#cancelCurOp: ((value?: undefined) => void) | undefined;
+	#cancelCurOps = new Set<(value?: undefined) => void>;
 	#reportClosed: ((value?: undefined) => void) | undefined;
 	#reportClosedWithError: ((error: unknown) => void) | undefined;
 
@@ -97,8 +97,17 @@ export class CallbackAccessor
 			this.ready = promise.then(undefined, () => undefined);
 			return new Promise<T | undefined>
 			(	(y, n) =>
-				{	this.#cancelCurOp = y;
-					promise.then(y, n);
+				{	this.#cancelCurOps.add(y);
+					promise.then
+					(	value =>
+						{	this.#cancelCurOps.delete(y);
+							y(value);
+						},
+						e =>
+						{	this.#cancelCurOps.delete(y);
+							n(e);
+						}
+					);
 				}
 			);
 		}
@@ -116,13 +125,13 @@ export class CallbackAccessor
 	async close(isCancelOrAbort=false, reason?: unknown)
 	{	const waitBeforeClose = this.waitBeforeClose;
 		const callbacks = this.#callbacks;
-		let cancelCurOp = this.#cancelCurOp;
+		const cancelCurOps = [...this.#cancelCurOps];
 		const reportClosed = this.#reportClosed;
 		const reportClosedWithError = this.#reportClosedWithError;
 
 		this.waitBeforeClose = undefined;
 		this.#callbacks = undefined; // don't call callbacks anymore
-		this.#cancelCurOp = undefined;
+		this.#cancelCurOps.clear();
 		this.#reportClosed = undefined;
 		this.#reportClosedWithError = undefined;
 
@@ -165,8 +174,9 @@ export class CallbackAccessor
 				catch (e)
 				{	this.error = e;
 				}
-				cancelCurOp?.();
-				cancelCurOp = undefined;
+				for (const cancelCurOp of cancelCurOps)
+				{	cancelCurOp();
+				}
 				if (this.error == undefined)
 				{	if (this.useAbortNotCancel)
 					{	// Writable streams: closed promise rejects with the abort reason (per WHATWG Streams Standard)

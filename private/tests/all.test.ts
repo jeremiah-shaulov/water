@@ -3403,3 +3403,26 @@ Deno.test
 		assertEquals(error.message, 'start failed');
 	}
 );
+
+Deno.test
+(	'Reader: cancel() settles all queued reads',
+	async () =>
+	{	// Source without a cancel callback (cancel is then a no-op per WHATWG default),
+		// whose read() never resolves. With several reads queued, cancel() must settle
+		// all of them (native readers resolve every queued read with done: true).
+		const rs = new RdStream
+		(	{	read(): Promise<number|null>
+				{	return new Promise<number|null>(() => {});
+				}
+			}
+		);
+		const reader = rs.getReader();
+		const read1 = reader.read();
+		const read2 = reader.read();
+		const read3 = reader.read();
+		await new Promise(y => setTimeout(y, 10));
+		await reader.cancel('bye');
+		const results = await Promise.all([read1, read2, read3]);
+		assertEquals(results.map(r => r.done), [true, true, true]);
+	}
+);
