@@ -230,7 +230,20 @@ export class TrStream extends TransformStream<Uint8Array, Uint8Array>
 		}
 
 		this.writable = new WrStreamInternal
-		(	{	start: !start ? undefined : () => start(writer),
+		(	{	start: !start ? undefined : () =>
+				{	// If start() throws synchronously, let it break the constructor (like native TransformStream).
+					// If it rejects asynchronously, propagate the error to the readable side, so consumers don't deadlock.
+					const startPromise = start(writer);
+					if (startPromise)
+					{	return startPromise.then
+						(	undefined,
+							e =>
+							{	notifyReadableError(e);
+								throw e;
+							}
+						);
+					}
+				},
 
 				async write(chunk, canReturnZero)
 				{	try

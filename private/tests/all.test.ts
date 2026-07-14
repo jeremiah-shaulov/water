@@ -3374,3 +3374,32 @@ Deno.test
 		assertEquals(closed, true);
 	}
 );
+
+Deno.test
+(	'Transform: start() error propagates to the readable side',
+	async () =>
+	{	// Native TransformStream errors both sides when start() rejects.
+		// Consumers of tr.readable must get the error, not hang forever.
+		const tr = new TrStream
+		(	{	start()
+				{	return Promise.reject(new Error('start failed'));
+				},
+
+				async transform(writer, chunk)
+				{	await writer.write(chunk);
+					return chunk.byteLength;
+				},
+			}
+		);
+		const src = new StringStreamer('Hello');
+		let error: Any;
+		try
+		{	await src.pipeThrough(tr).bytes();
+		}
+		catch (e)
+		{	error = e;
+		}
+		assertEquals(error instanceof Error, true);
+		assertEquals(error.message, 'start failed');
+	}
+);
