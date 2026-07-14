@@ -3515,3 +3515,30 @@ Deno.test
 		assertEquals(r2.done, true);
 	}
 );
+
+Deno.test
+(	'WrStream: close() on an already closed or errored stream does not throw',
+	async () =>
+	{	// Errored stream: close() must not reject with the old error
+		const ws = new WrStream
+		(	{	write()
+				{	throw new Error('write failed');
+				}
+			}
+		);
+		let writeErr: Any;
+		try
+		{	await ws.write(new Uint8Array([1]));
+		}
+		catch (e)
+		{	writeErr = e;
+		}
+		assertEquals(writeErr?.message, 'write failed');
+		await ws.close();
+
+		// Already closed stream: close() again must not reject either
+		const ws2 = new WrStream({write: chunk => chunk.byteLength});
+		await ws2.close();
+		await ws2.close();
+	}
+);
