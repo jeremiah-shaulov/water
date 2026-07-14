@@ -2,6 +2,7 @@
 // rm -rf .vscode/coverage/profile && deno test --fail-fast --trace-leaks --allow-all --coverage=.vscode/coverage/profile private/tests/all.test.ts && deno coverage --unstable .vscode/coverage/profile --lcov > .vscode/coverage/lcov.info
 
 import {RdStream, type Source, TrStream, WrStream} from '../../mod.ts';
+import {Piper} from '../piper.ts';
 import {assertEquals, assert} from './deps.ts';
 
 /**	Native `ReadableStream` (byte-mode, BYOB reader) leaves `reader.read(view)` pending forever
@@ -3194,6 +3195,48 @@ Deno.test
 		assertEquals(collected.length, 100);
 		for (let i=0; i<100; i++)
 		{	assertEquals(collected[i], i);
+		}
+	}
+);
+
+Deno.test
+(	'Piper: read() with wrapped-around (left) region',
+	() =>
+	{	// Build the piper state that an interrupted pipeTo() leaves behind:
+		// `buffer[writePos .. readPos]` is the right region (logically first),
+		// `buffer[0 .. readPos2]` is the left region (logically after the right one).
+		function makePiper()
+		{	const buffer = new Uint8Array(16);
+			buffer.set([100, 101, 102], 0); // left region
+			buffer.set([1, 2, 3, 4], 4); // right region
+			const piper = new Piper(buffer, 1);
+			(piper as Any).readPos2 = 3;
+			(piper as Any).writePos = 4;
+			(piper as Any).readPos = 8;
+			return piper;
+		}
+
+		// Read with a view that can hold everything at once
+		{	const piper = makePiper();
+			const view = new Uint8Array(10);
+			const result = piper.read(view);
+			assertEquals(Array.from(result ?? []), [1, 2, 3, 4, 100, 101, 102]);
+			assertEquals(piper.read(view), undefined);
+		}
+
+		// Read with small views - the concatenation must be intact regardless of chunking
+		{	const piper = makePiper();
+			const collected = new Array<number>;
+			while (true)
+			{	const result = piper.read(new Uint8Array(5));
+				if (!result)
+				{	break;
+				}
+				for (const b of result)
+				{	collected.push(b);
+				}
+			}
+			assertEquals(collected, [1, 2, 3, 4, 100, 101, 102]);
 		}
 	}
 );

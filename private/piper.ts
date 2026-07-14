@@ -258,16 +258,14 @@ export class Piper
 			const nextWritePos = writePos + nRead;
 			view.set(buffer.subarray(writePos, nextWritePos));
 			if (nextWritePos == readPos)
-			{	this.readPos2 = 0;
-				this.writePos = 0;
-				if (nRead+readPos2 <= view.byteLength)
-				{	view.set(buffer.subarray(0, readPos2));
-					nRead += readPos2;
-					this.readPos = 0;
-				}
-				else
-				{	this.readPos = readPos2;
-				}
+			{	// The right region is fully consumed, so the left region (if any) becomes the new right region.
+				// Copy from it as much as fits in the rest of the view.
+				const nRead2 = Math.min(view.byteLength-nRead, readPos2);
+				view.set(buffer.subarray(0, nRead2), nRead);
+				nRead += nRead2;
+				this.readPos = readPos2;
+				this.readPos2 = 0;
+				this.writePos = nRead2;
 			}
 			else
 			{	this.writePos = nextWritePos;
