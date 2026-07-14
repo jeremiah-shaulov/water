@@ -3147,3 +3147,53 @@ Deno.test
 		assertEquals(Array.from(data), nativeOut);
 	}
 );
+
+Deno.test
+(	'Tee: partial consume of buffered data',
+	async () =>
+	{	// Source: 100 bytes 0..99, delivered in 10-byte chunks
+		let pos = 0;
+		const rs = new RdStream
+		(	{	read(view)
+				{	if (pos >= 100)
+					{	return null;
+					}
+					const n = Math.min(10, view.byteLength, 100-pos);
+					for (let i=0; i<n; i++)
+					{	view[i] = pos + i;
+					}
+					pos += n;
+					return n;
+				}
+			}
+		);
+		const [rs1, rs2] = rs.tee();
+
+		// Drain rs1 fully first (this buffers everything for rs2)
+		const b1 = await rs1.bytes();
+		assertEquals(b1.byteLength, 100);
+		for (let i=0; i<100; i++)
+		{	assertEquals(b1[i], i);
+		}
+
+		// Read rs2 with small BYOB buffers, so each read consumes only a part of the buffered data
+		const r2 = rs2.getReader({mode: 'byob'});
+		const collected = new Array<number>;
+		while (true)
+		{	const {value, done} = await r2.read(new Uint8Array(7));
+			if (value)
+			{	for (const b of value)
+				{	collected.push(b);
+				}
+			}
+			if (done)
+			{	break;
+			}
+		}
+		r2.releaseLock();
+		assertEquals(collected.length, 100);
+		for (let i=0; i<100; i++)
+		{	assertEquals(collected[i], i);
+		}
+	}
+);

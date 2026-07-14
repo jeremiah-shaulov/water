@@ -26,12 +26,13 @@ export class TeeRegular
 			const len = Math.min(wantLen, hasLen);
 			view.set(this.#buffered.subarray(0, len));
 			if (len < wantLen)
-			{	this.#buffered = this.#buffered.subarray(len);
+			{	// Only a part of the buffered data was consumed - the rest is still destined for this reader
+				this.#buffered = this.#buffered.subarray(len);
 			}
 			else
 			{	this.#buffered = new Uint8Array(this.#buffered.buffer, 0, 0);
+				this.#bufferedFor = 0;
 			}
-			this.#bufferedFor = 0;
 			return len;
 		}
 		else
