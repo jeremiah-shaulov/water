@@ -1,5 +1,6 @@
 {	"name": "@shaulov/water",
 	"version": "1.2.1",
 	"license": "MIT",
+	"minimumDependencyAge": "0",
 	"exports": "./mod.ts"
 }
