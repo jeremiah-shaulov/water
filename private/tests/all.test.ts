@@ -43,6 +43,8 @@ const DENO_READER_HAS_BUG_2 = true;
 // deno-lint-ignore no-explicit-any
 type Any = any;
 
+type HTimeout = ReturnType<typeof setTimeout>;
+
 const textEncoder = new TextEncoder;
 const textDecoder = new TextDecoder;
 
@@ -2322,7 +2324,7 @@ Deno.test
 	{	// Native baseline
 		{	let nativeN = 0;
 			let nativeCanceled = false;
-			let nativeTimer: number|undefined;
+			let nativeTimer: HTimeout|undefined;
 			const nativeRs = new ReadableStream
 			(	{	pull(c)
 					{	return new Promise<void>
@@ -2365,7 +2367,7 @@ Deno.test
 		// Our impl
 		let n = 0;
 		let sourceCancelled = false;
-		let pendingTimer: number|undefined;
+		let pendingTimer: HTimeout|undefined;
 		const rs = new RdStream
 		(	{	read(v)
 				{	return new Promise<number|null>
@@ -2409,7 +2411,7 @@ Deno.test
 	async () =>
 	{	// Native baseline
 		{	const nativeTr = new TransformStream;
-			let nativeTimer: number|undefined;
+			let nativeTimer: HTimeout|undefined;
 			let nativeResolved = false;
 			await Promise.race
 			(	[	nativeTr.readable.cancel('hi').then(() => {nativeResolved = true}),
@@ -2423,7 +2425,7 @@ Deno.test
 		}
 		// Our impl
 		const tr = new TrStream;
-		let timer: number|undefined;
+		let timer: HTimeout|undefined;
 		let resolved = false;
 		await Promise.race
 		(	[	tr.readable.cancel('hi').then(() => {resolved = true}),
@@ -2514,7 +2516,7 @@ Deno.test
 	{	// Native baseline
 		{	let nativePos = 0;
 			let nativeSourceCancelled = false;
-			let nativePendingTimer: number|undefined;
+			let nativePendingTimer: HTimeout|undefined;
 			const nativeRs = new ReadableStream
 			(	{	pull(c)
 					{	return new Promise<void>
@@ -2561,7 +2563,7 @@ Deno.test
 		// Our impl
 		let pos = 0;
 		let sourceCancelled = false;
-		let pendingTimer: number|undefined;
+		let pendingTimer: HTimeout|undefined;
 		const rs = new RdStream
 		(	{	read(v)
 				{	return new Promise<number|null>
