@@ -71,7 +71,7 @@
 #### ⚙ `override` close(): Promise\<`void`>
 
 > Calls `sink.close()`. After that no more callbacks will be called.
-> If `close()` called again on already closed stream, nothing happens (no error is thrown).
+> If `close()` called again on already closed (or errored) stream, nothing happens (no error is thrown).
 
 
 

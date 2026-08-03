@@ -6,7 +6,7 @@
 
 - [constructor](#-constructorcallbacks-callbacks-useabortnotcancel-boolean)
 - method [writeAll](#-writeallchunk-uint8array-promisevoid)
-- 9 inherited members from [CallbackAccessor](../class.CallbackAccessor/README.md)
+- 10 inherited members from [CallbackAccessor](../class.CallbackAccessor/README.md)
 
 
 #### 🔧 `constructor`(callbacks: [Callbacks](../type.Callbacks/README.md), useAbortNotCancel: `boolean`)

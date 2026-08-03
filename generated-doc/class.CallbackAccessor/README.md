@@ -5,8 +5,9 @@
 ## This class has
 
 - [constructor](#-constructorcallbacks-callbacks-useabortnotcancel-boolean)
-- 5 properties:
+- 6 properties:
 [closed](#-closed-promiseundefined),
+[isCanceled](#-iscanceled-boolean),
 [error](#-error-unknown),
 [ready](#-ready-promiseundefined),
 [waitBeforeClose](#-waitbeforeclose-promiseunknown--undefined),
@@ -22,6 +23,10 @@
 
 
 #### 📄 closed: Promise\<`undefined`>
+
+
+
+#### 📄 isCanceled: `boolean`
 
 
 
